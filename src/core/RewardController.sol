@@ -1,21 +1,18 @@
 pragma solidity ^0.8.26;
 
-/* Openzeppelin Contracts & Interfaces */
-
+/* Openzeppelin Imports */
 import { AccessControl } from "@openzeppelin-v5/contracts/access/AccessControl.sol";
 import { SafeCast } from "@openzeppelin-v5/contracts/utils/math/SafeCast.sol";
 
-/* Superfluid Protocol Contracts & Interfaces */
+/* Superfluid Imports */
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
-import {
-    ISuperToken,
-    ISuperfluidPool,
-    PoolConfig
-} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
+/* Local Imports */
 import { IRewardController } from "src/interfaces/core/IRewardController.sol";
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 
+/* Library Settings */
 using SuperTokenV1Library for ISuperToken;
 using SafeCast for int256;
 
@@ -29,10 +26,9 @@ contract RewardController is IRewardController, AccessControl {
     mapping(address child => IStakingPool stakingPool) public stakingPools;
 
     // CONSTRUCTOR
-    constructor(address admin, address _edenFactory, ISuperToken _spirit) {
+    constructor(address admin, ISuperToken _spirit) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(DISTRIBUTOR_ROLE, admin);
-        _grantRole(FACTORY_ROLE, _edenFactory);
 
         SPIRIT = _spirit;
     }
