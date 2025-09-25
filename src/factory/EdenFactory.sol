@@ -82,10 +82,12 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
         bytes32 salt = keccak256(abi.encode(childToken));
 
         // Deploy the new StakingPool contract
-        stakingPool = address(new BeaconProxy{ salt: salt }(address(STAKING_POOL_BEACON), ""));
-
-        // Initialize the new Locker instance
-        IStakingPool(stakingPool).initialize(ISuperToken(childToken));
+        stakingPool = address(
+            new BeaconProxy{ salt: salt }(
+                address(STAKING_POOL_BEACON),
+                abi.encodeWithSelector(IStakingPool.initialize.selector, ISuperToken(childToken))
+            )
+        );
     }
 
 }
