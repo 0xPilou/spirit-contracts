@@ -7,7 +7,6 @@ interface IStakingPool {
 
     struct StakingInfo {
         uint256 stakedAmount;
-        uint256 multiplier;
         uint256 lockedUntil;
     }
 

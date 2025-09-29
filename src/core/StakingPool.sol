@@ -97,7 +97,6 @@ contract StakingPool is IStakingPool, Initializable {
 
         // Store staking information
         userStakingInfo.stakedAmount = amount;
-        userStakingInfo.multiplier = multiplier;
         userStakingInfo.lockedUntil = block.timestamp + lockingPeriod;
 
         distributionPool.updateMemberUnits(msg.sender, units);
@@ -128,16 +127,13 @@ contract StakingPool is IStakingPool, Initializable {
             multiplier = calculateMultiplier(userStakingInfo.lockedUntil - block.timestamp);
         }
 
-        uint128 currentUnits = distributionPool.getUnits(msg.sender);
-
         // Calculate units with multiplier applied
-        uint128 newUnits = currentUnits + uint128((amount / _DOWNSCALER) * multiplier / BASE_MULTIPLIER);
+        uint128 unitsToAdd = uint128((amount / _DOWNSCALER) * multiplier / BASE_MULTIPLIER);
 
         // Store staking information
         userStakingInfo.stakedAmount += amount;
-        userStakingInfo.multiplier = retrieveMultiplier(newUnits, userStakingInfo.stakedAmount);
 
-        distributionPool.updateMemberUnits(msg.sender, newUnits);
+        distributionPool.increaseMemberUnits(msg.sender, unitsToAdd);
         child.transferFrom(msg.sender, address(this), amount);
     }
 
@@ -170,7 +166,6 @@ contract StakingPool is IStakingPool, Initializable {
 
         // Update the user's locking details
         userStakingInfo.lockedUntil = block.timestamp + newLockingPeriod;
-        userStakingInfo.multiplier = retrieveMultiplier(newUnits, userStakingInfo.stakedAmount);
 
         // Update the user's units
         distributionPool.updateMemberUnits(msg.sender, newUnits);
@@ -189,11 +184,13 @@ contract StakingPool is IStakingPool, Initializable {
             revert TOKENS_STILL_LOCKED();
         }
 
+        uint256 multiplier = retrieveMultiplier(distributionPool.getUnits(msg.sender), userStakingInfo.stakedAmount);
+
         // Calculate units to remove (with original multiplier applied, multiplier is in basis points)
-        uint128 unitsToRemove = uint128((amount * userStakingInfo.multiplier) / (10_000 * _DOWNSCALER));
+        uint128 unitsToRemove = uint128((amount * multiplier) / (BASE_MULTIPLIER * _DOWNSCALER));
 
         // Update member units
-        distributionPool.updateMemberUnits(msg.sender, unitsToRemove);
+        distributionPool.decreaseMemberUnits(msg.sender, unitsToRemove);
 
         // Update staking info
         _stakingInfo[msg.sender].stakedAmount -= amount;
