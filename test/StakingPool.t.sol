@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
-
+import { console } from "forge-std/console.sol";
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 import { EdenTestBase } from "test/base/EdenTestBase.t.sol";
 
@@ -142,16 +142,197 @@ contract StakingPoolTest is EdenTestBase {
         );
     }
 
-    function test_unstake() public { }
-    function test_unstake_insufficient_staked_amount() public { }
-    function test_unstake_tokens_still_locked() public { }
+    function test_extendLockingPeriod(
+        uint256 initialStakedAmount,
+        uint256 initialLockingPeriod,
+        uint256 newLockingPeriod,
+        uint256 extendLockingPeriodTimestamp
+    ) public {
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialLockingPeriod =
+            bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        newLockingPeriod =
+            bound(newLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        extendLockingPeriodTimestamp = bound(
+            extendLockingPeriodTimestamp,
+            initialLockingPeriod + block.timestamp,
+            initialLockingPeriod + _stakingPool.MAXIMUM_LOCKING_PERIOD() * 10
+        );
+
+        _stake(ALICE, initialStakedAmount, initialLockingPeriod);
+
+        vm.warp(extendLockingPeriodTimestamp);
+
+        _extendLockingPeriod(ALICE, newLockingPeriod);
+    }
+
+    function test_extendLockingPeriod_not_staked_yet(uint256 newLockingPeriod) public {
+        newLockingPeriod =
+            bound(newLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        _extendLockingPeriod_should_revert(
+            ALICE, newLockingPeriod, abi.encodeWithSelector(IStakingPool.NOT_STAKED_YET.selector)
+        );
+    }
+
+    function test_extendLockingPeriod_lock_not_expired(
+        uint256 initialStakedAmount,
+        uint256 initialLockingPeriod,
+        uint256 newLockingPeriod,
+        uint256 invalidExtendLockingPeriodTimestamp
+    ) public {
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialLockingPeriod =
+            bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        newLockingPeriod =
+            bound(newLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        invalidExtendLockingPeriodTimestamp =
+            bound(invalidExtendLockingPeriodTimestamp, 0, initialLockingPeriod + block.timestamp - 1);
+
+        _stake(ALICE, initialStakedAmount, initialLockingPeriod);
+
+        vm.warp(invalidExtendLockingPeriodTimestamp);
+
+        _extendLockingPeriod_should_revert(
+            ALICE, newLockingPeriod, abi.encodeWithSelector(IStakingPool.LOCK_NOT_EXPIRED.selector)
+        );
+    }
+
+    function test_extendLockingPeriod_invalid_locking_period_too_short(
+        uint256 initialStakedAmount,
+        uint256 initialLockingPeriod,
+        uint256 newLockingPeriodTooShort,
+        uint256 extendLockingPeriodTimestamp
+    ) public {
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialLockingPeriod =
+            bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        newLockingPeriodTooShort = bound(newLockingPeriodTooShort, 0, _stakingPool.MINIMUM_LOCKING_PERIOD() - 1);
+
+        extendLockingPeriodTimestamp = bound(
+            extendLockingPeriodTimestamp,
+            initialLockingPeriod + block.timestamp,
+            initialLockingPeriod + _stakingPool.MAXIMUM_LOCKING_PERIOD() * 10
+        );
+
+        _stake(ALICE, initialStakedAmount, initialLockingPeriod);
+
+        vm.warp(extendLockingPeriodTimestamp);
+
+        _extendLockingPeriod_should_revert(
+            ALICE, newLockingPeriodTooShort, abi.encodeWithSelector(IStakingPool.INVALID_LOCKING_PERIOD.selector)
+        );
+    }
+
+    function test_extendLockingPeriod_invalid_locking_period_too_long(
+        uint256 initialStakedAmount,
+        uint256 initialLockingPeriod,
+        uint256 newLockingPeriodTooLong,
+        uint256 extendLockingPeriodTimestamp
+    ) public {
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialLockingPeriod =
+            bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        newLockingPeriodTooLong = bound(
+            newLockingPeriodTooLong,
+            _stakingPool.MAXIMUM_LOCKING_PERIOD() + 1,
+            _stakingPool.MAXIMUM_LOCKING_PERIOD() * 10
+        );
+
+        extendLockingPeriodTimestamp = bound(
+            extendLockingPeriodTimestamp,
+            initialLockingPeriod + block.timestamp,
+            initialLockingPeriod + _stakingPool.MAXIMUM_LOCKING_PERIOD() * 10
+        );
+
+        _stake(ALICE, initialStakedAmount, initialLockingPeriod);
+
+        vm.warp(extendLockingPeriodTimestamp);
+
+        _extendLockingPeriod_should_revert(
+            ALICE, newLockingPeriodTooLong, abi.encodeWithSelector(IStakingPool.INVALID_LOCKING_PERIOD.selector)
+        );
+    }
+
+    function test_unstake(uint256 initialStakedAmount, uint256 lockingPeriod, uint256 invalidAmountToUnstake) public {
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        invalidAmountToUnstake = bound(invalidAmountToUnstake, _stakingPool.MINIMUM_STAKE_AMOUNT(), initialStakedAmount);
+
+        lockingPeriod =
+            bound(lockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        _stake(ALICE, initialStakedAmount, lockingPeriod);
+
+        vm.warp(lockingPeriod + block.timestamp);
+        _unstake(ALICE, invalidAmountToUnstake);
+    }
+
+    function test_unstake_invalid_stake_amount(
+        uint256 initialStakedAmount,
+        uint256 lockingPeriod,
+        uint256 invalidAmountToUnstake
+    ) public {
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        invalidAmountToUnstake = bound(invalidAmountToUnstake, 0, _stakingPool.MINIMUM_STAKE_AMOUNT() - 1);
+
+        lockingPeriod =
+            bound(lockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        _stake(ALICE, initialStakedAmount, lockingPeriod);
+
+        vm.warp(lockingPeriod + block.timestamp);
+        _unstake_should_revert(
+            ALICE, invalidAmountToUnstake, abi.encodeWithSelector(IStakingPool.INVALID_STAKE_AMOUNT.selector)
+        );
+    }
+
+    function test_unstake_insufficient_staked_amount(
+        uint256 initialStakedAmount,
+        uint256 lockingPeriod,
+        uint256 amountToUnstake
+    ) public {
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY / 2);
+        amountToUnstake = bound(amountToUnstake, initialStakedAmount + 1, _TOKEN_SUPPLY);
+
+        lockingPeriod =
+            bound(lockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+
+        _stake(ALICE, initialStakedAmount, lockingPeriod);
+
+        vm.warp(lockingPeriod + block.timestamp);
+        _unstake_should_revert(
+            ALICE, amountToUnstake, abi.encodeWithSelector(IStakingPool.INSUFFICIENT_STAKED_AMOUNT.selector)
+        );
+    }
+
+    function test_unstake_tokens_still_locked(
+        uint256 initialStakedAmount,
+        uint256 lockingPeriod,
+        uint256 invalidAmountToUnstake,
+        uint256 invalidUnstakeTimestamp
+    ) public {
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        invalidAmountToUnstake = bound(invalidAmountToUnstake, _stakingPool.MINIMUM_STAKE_AMOUNT(), initialStakedAmount);
+        lockingPeriod =
+            bound(lockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
+        invalidUnstakeTimestamp = bound(invalidUnstakeTimestamp, 0, lockingPeriod + block.timestamp - 1);
+
+        _stake(ALICE, initialStakedAmount, lockingPeriod);
+
+        vm.warp(invalidUnstakeTimestamp);
+        _unstake_should_revert(
+            ALICE, invalidAmountToUnstake, abi.encodeWithSelector(IStakingPool.TOKENS_STILL_LOCKED.selector)
+        );
+    }
+
     function test_refreshDistributionFlow() public { }
-    function test_extendLockingPeriod() public { }
-    function test_extendLockingPeriod_not_staked_yet() public { }
-    function test_extendLockingPeriod_lock_not_expired() public { }
-    function test_extendLockingPeriod_invalid_locking_period() public { }
-    function test_extendLockingPeriod_invalid_locking_period_too_short() public { }
-    function test_extendLockingPeriod_invalid_locking_period_too_long() public { }
+    function test_refreshDistributionFlow_not_reward_controller() public { }
 
     function test_calculateMultiplier_characteristics(uint256 lockingPeriod) public view {
         lockingPeriod =
@@ -161,21 +342,19 @@ contract StakingPoolTest is EdenTestBase {
 
         assertEq(
             multiplier,
-            _stakingPool.BASE_MULTIPLIER()
+            _stakingPool.MIN_MULTIPLIER()
                 + ((lockingPeriod - _stakingPool.MINIMUM_LOCKING_PERIOD()) * _stakingPool.MULTIPLIER_RANGE())
                     / _stakingPool.TIME_RANGE()
         );
 
-        assertLe(multiplier, 360_000);
-        assertGe(multiplier, 10_000);
+        assertGe(multiplier, _stakingPool.MIN_MULTIPLIER());
+        assertLe(multiplier, _stakingPool.MAX_MULTIPLIER());
 
-        multiplier = _stakingPool.calculateMultiplier(_stakingPool.MINIMUM_LOCKING_PERIOD());
-        assertEq(multiplier, _stakingPool.BASE_MULTIPLIER());
-
-        multiplier = _stakingPool.calculateMultiplier(_stakingPool.MAXIMUM_LOCKING_PERIOD());
-        assertEq(multiplier, _stakingPool.BASE_MULTIPLIER() + _stakingPool.MULTIPLIER_RANGE());
+        assertEq(_stakingPool.calculateMultiplier(_stakingPool.MINIMUM_LOCKING_PERIOD()), _stakingPool.MIN_MULTIPLIER());
+        assertEq(_stakingPool.calculateMultiplier(_stakingPool.MAXIMUM_LOCKING_PERIOD()), _stakingPool.MAX_MULTIPLIER());
     }
 
+    // Helper functions
     function _stake(address staker, uint256 amountToStake, uint256 lockingPeriod) internal {
         dealSuperToken(ADMIN, staker, _childToken, amountToStake);
 
@@ -189,6 +368,19 @@ contract StakingPoolTest is EdenTestBase {
         assertEq(
             _stakingPool.getStakingInfo(staker).lockedUntil, block.timestamp + lockingPeriod, "Locked until mismatch"
         );
+    }
+
+    function _stake_should_revert(address staker, uint256 amountToStake, uint256 lockingPeriod, bytes memory revertWith)
+        internal
+    {
+        dealSuperToken(ADMIN, staker, _childToken, amountToStake);
+
+        vm.startPrank(staker);
+        _childToken.approve(address(_stakingPool), amountToStake);
+
+        vm.expectRevert(revertWith);
+        _stakingPool.stake(amountToStake, lockingPeriod);
+        vm.stopPrank();
     }
 
     function _increaseStake(address staker, uint256 amountToStake, bool withBonus) internal {
@@ -209,10 +401,10 @@ contract StakingPoolTest is EdenTestBase {
 
         uint256 expectedMultiplier = withBonus
             ? _stakingPool.calculateMultiplier(_stakingPool.getStakingInfo(staker).lockedUntil - block.timestamp)
-            : _stakingPool.BASE_MULTIPLIER();
+            : _stakingPool.MIN_MULTIPLIER();
 
         uint128 expectedNewUnits =
-            uint128((amountToStake / _DOWNSCALER) * expectedMultiplier / _stakingPool.BASE_MULTIPLIER());
+            uint128((amountToStake / _DOWNSCALER) * expectedMultiplier / _stakingPool.MIN_MULTIPLIER());
 
         assertEq(_stakingPool.distributionPool().getUnits(staker), initialUnits + expectedNewUnits, "Units mismatch");
 
@@ -238,16 +430,103 @@ contract StakingPoolTest is EdenTestBase {
         vm.stopPrank();
     }
 
-    function _stake_should_revert(address staker, uint256 amountToStake, uint256 lockingPeriod, bytes memory revertWith)
-        internal
-    {
-        dealSuperToken(ADMIN, staker, _childToken, amountToStake);
+    function _extendLockingPeriod(address staker, uint256 newLockingPeriod) internal {
+        assertGe(
+            block.timestamp,
+            _stakingPool.getStakingInfo(staker).lockedUntil,
+            "Cannot extend before locking period expires"
+        );
+
+        uint256 initialUnits = _stakingPool.distributionPool().getUnits(staker);
 
         vm.startPrank(staker);
-        _childToken.approve(address(_stakingPool), amountToStake);
+        _stakingPool.extendLockingPeriod(newLockingPeriod);
+        vm.stopPrank();
 
+        uint256 expectedMultiplier =
+            _stakingPool.calculateMultiplier(_stakingPool.getStakingInfo(staker).lockedUntil - block.timestamp);
+
+        uint128 expectedAddedUnits = uint128(
+            (_stakingPool.getStakingInfo(staker).stakedAmount / _DOWNSCALER) * expectedMultiplier
+                / _stakingPool.MIN_MULTIPLIER()
+        );
+
+        assertEq(_stakingPool.distributionPool().getUnits(staker), initialUnits + expectedAddedUnits, "Units mismatch");
+        assertEq(
+            _stakingPool.getStakingInfo(staker).lockedUntil,
+            block.timestamp + newLockingPeriod,
+            "Unlocking Date mismatch"
+        );
+    }
+
+    function _extendLockingPeriod_should_revert(address staker, uint256 newLockingPeriod, bytes memory revertWith)
+        internal
+    {
+        vm.startPrank(staker);
         vm.expectRevert(revertWith);
-        _stakingPool.stake(amountToStake, lockingPeriod);
+        _stakingPool.extendLockingPeriod(newLockingPeriod);
+        vm.stopPrank();
+    }
+
+    function _unstake(address staker, uint256 amountToUnstake) internal {
+        uint256 initialStakedAmount = _stakingPool.getStakingInfo(staker).stakedAmount;
+        uint256 initialLockedUntil = _stakingPool.getStakingInfo(staker).lockedUntil;
+        uint128 initialUnits = _stakingPool.distributionPool().getUnits(staker);
+        uint256 initialStakerBalance = _childToken.balanceOf(staker);
+        uint256 initialStakingPoolBalance = _childToken.balanceOf(address(_stakingPool));
+
+        assertGt(initialStakedAmount, 0, "Initial staked amount should be greater than 0");
+        assertLe(initialLockedUntil, block.timestamp, "Unlocking Date should be expired");
+        assertGt(initialUnits, 0, "Initial units should be greater than 0");
+        assertGt(initialStakingPoolBalance, 0, "Initial staking pool balance should be greater than 0");
+
+        // Use proportional calculation to match the implementation
+        uint128 expectedRemovedUnits = uint128((amountToUnstake * initialUnits) / initialStakedAmount);
+
+        vm.startPrank(staker);
+        _stakingPool.unstake(amountToUnstake);
+        vm.stopPrank();
+
+        assertEq(
+            _stakingPool.getStakingInfo(staker).stakedAmount,
+            initialStakedAmount - amountToUnstake,
+            "Staked amount mismatch after unstake"
+        );
+
+        if (initialStakedAmount - amountToUnstake == 0) {
+            assertEq(
+                _stakingPool.getStakingInfo(staker).lockedUntil, 0, "Unlocking Date should be 0 after total unstake"
+            );
+            assertEq(_stakingPool.distributionPool().getUnits(staker), 0, "Units should be 0 after total unstake");
+        } else {
+            assertEq(
+                _stakingPool.getStakingInfo(staker).lockedUntil,
+                initialLockedUntil,
+                "Unlocking Date should not change after partial unstake"
+            );
+            assertEq(
+                _stakingPool.distributionPool().getUnits(staker),
+                initialUnits - expectedRemovedUnits,
+                "Units mismatch after partial unstake"
+            );
+        }
+
+        assertEq(
+            _childToken.balanceOf(staker),
+            initialStakerBalance + amountToUnstake,
+            "Staker balance mismatch after unstake"
+        );
+        assertEq(
+            _childToken.balanceOf(address(_stakingPool)),
+            initialStakingPoolBalance - amountToUnstake,
+            "Staking pool balance mismatch after unstake"
+        );
+    }
+
+    function _unstake_should_revert(address staker, uint256 amountToUnstake, bytes memory revertWith) internal {
+        vm.startPrank(staker);
+        vm.expectRevert(revertWith);
+        _stakingPool.unstake(amountToUnstake);
         vm.stopPrank();
     }
 
