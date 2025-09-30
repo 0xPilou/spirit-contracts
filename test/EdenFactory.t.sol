@@ -20,11 +20,11 @@ contract EdenFactoryTest is EdenTestBase {
     function test_createChild() public {
         vm.prank(ADMIN);
         (ISuperToken newChildToken, IStakingPool newStakingPool) =
-            _edenFactory.createChild("New Child Token", "NEWCHILD");
+            _edenFactory.createChild("New Child Token", "NEWCHILD", ARTIST, AGENT);
 
         assertNotEq(address(newChildToken), address(0), "Invalid child token address");
         assertNotEq(address(newStakingPool), address(0), "Invalid staking pool address");
-        assertEq(newChildToken.balanceOf(ADMIN), _edenFactory.DEFAULT_SUPPLY(), "Invalid minted supply");
+        assertEq(newChildToken.totalSupply(), _edenFactory.DEFAULT_SUPPLY(), "Invalid minted supply");
         assertEq(address(newStakingPool.child()), address(newChildToken), "Child token mismatch");
         assertEq(address(newStakingPool.SPIRIT()), address(_spirit), "SPIRIT token mismatch");
         assertEq(address(newStakingPool.REWARD_CONTROLLER()), address(_rewardController), "Reward controller mismatch");
@@ -43,7 +43,7 @@ contract EdenFactoryTest is EdenTestBase {
 
         vm.prank(nonAdmin);
         vm.expectRevert();
-        _edenFactory.createChild("New Child Token", "NEWCHILD");
+        _edenFactory.createChild("New Child Token", "NEWCHILD", ARTIST, AGENT);
     }
 
 }

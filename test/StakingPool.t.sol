@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { SafeCast } from "@openzeppelin-v5/contracts/utils/math/SafeCast.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
 
-import { SafeCast } from "@openzeppelin-v5/contracts/utils/math/SafeCast.sol";
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 import { EdenTestBase } from "test/base/EdenTestBase.t.sol";
 
 using SafeCast for int256;
+using SuperTokenV1Library for ISuperToken;
 
 contract StakingPoolTest is EdenTestBase {
 
@@ -15,7 +17,7 @@ contract StakingPoolTest is EdenTestBase {
     IStakingPool internal _stakingPool;
     ISuperToken internal _childToken;
 
-    uint256 internal constant _TOKEN_SUPPLY = 1_000_000_000 ether;
+    uint256 internal constant _AVAILABLE_SUPPLY = 500_000_000 ether;
     uint256 internal constant _DOWNSCALER = 1e18;
 
     function setUp() public override {
@@ -23,7 +25,7 @@ contract StakingPoolTest is EdenTestBase {
 
         // Deploy and initialize the StakingPool
         vm.prank(ADMIN);
-        (_childToken, _stakingPool) = _edenFactory.createChild("Child Token", "CHILD");
+        (_childToken, _stakingPool) = _edenFactory.createChild("Child Token", "CHILD", ARTIST, AGENT);
     }
 
     function test_initialize() public view {
@@ -35,7 +37,7 @@ contract StakingPoolTest is EdenTestBase {
     }
 
     function test_stake(uint256 amountToStake, uint256 lockingPeriod) public {
-        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
         lockingPeriod =
             bound(lockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
 
@@ -47,8 +49,9 @@ contract StakingPoolTest is EdenTestBase {
         uint256 additionalAmountToStake,
         uint256 lockingPeriod
     ) public {
-        initialAmountToStake = bound(initialAmountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY / 2);
-        additionalAmountToStake = bound(additionalAmountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY / 2);
+        initialAmountToStake = bound(initialAmountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY / 2);
+        additionalAmountToStake =
+            bound(additionalAmountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY / 2);
 
         lockingPeriod =
             bound(lockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
@@ -73,7 +76,7 @@ contract StakingPoolTest is EdenTestBase {
     }
 
     function test_stake_invalid_locking_period_too_short(uint256 amountToStake, uint256 invalidLockingPeriod) public {
-        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
         invalidLockingPeriod = bound(invalidLockingPeriod, 0, _stakingPool.MINIMUM_LOCKING_PERIOD() - 1);
 
         _stake_should_revert(
@@ -85,7 +88,7 @@ contract StakingPoolTest is EdenTestBase {
     }
 
     function test_stake_invalid_locking_period_too_long(uint256 amountToStake, uint256 invalidLockingPeriod) public {
-        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
 
         invalidLockingPeriod =
             bound(invalidLockingPeriod, _stakingPool.MAXIMUM_LOCKING_PERIOD() + 1, uint256(type(uint256).max));
@@ -104,8 +107,8 @@ contract StakingPoolTest is EdenTestBase {
         uint256 amountToStake,
         uint256 increaseStakeTimestamp
     ) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY / 2);
-        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY / 2);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY / 2);
+        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY / 2);
         initialLockingPeriod =
             bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
         increaseStakeTimestamp = bound(increaseStakeTimestamp, 0, _stakingPool.MAXIMUM_LOCKING_PERIOD() * 10);
@@ -120,7 +123,7 @@ contract StakingPoolTest is EdenTestBase {
     }
 
     function test_increaseStake_not_staked_yet(uint256 amountToStake) public {
-        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY / 2);
+        amountToStake = bound(amountToStake, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY / 2);
         _increaseStake_should_revert(ALICE, amountToStake, abi.encodeWithSelector(IStakingPool.NOT_STAKED_YET.selector));
     }
 
@@ -130,7 +133,7 @@ contract StakingPoolTest is EdenTestBase {
         uint256 amountToStake,
         uint256 increaseStakeTimestamp
     ) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY / 2);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY / 2);
         amountToStake = bound(amountToStake, 0, _stakingPool.MINIMUM_STAKE_AMOUNT() - 1);
         initialLockingPeriod =
             bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
@@ -151,7 +154,7 @@ contract StakingPoolTest is EdenTestBase {
         uint256 newLockingPeriod,
         uint256 extendLockingPeriodTimestamp
     ) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
         initialLockingPeriod =
             bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
 
@@ -186,7 +189,7 @@ contract StakingPoolTest is EdenTestBase {
         uint256 newLockingPeriod,
         uint256 invalidExtendLockingPeriodTimestamp
     ) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
         initialLockingPeriod =
             bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
 
@@ -211,7 +214,7 @@ contract StakingPoolTest is EdenTestBase {
         uint256 newLockingPeriodTooShort,
         uint256 extendLockingPeriodTimestamp
     ) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
         initialLockingPeriod =
             bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
 
@@ -238,7 +241,7 @@ contract StakingPoolTest is EdenTestBase {
         uint256 newLockingPeriodTooLong,
         uint256 extendLockingPeriodTimestamp
     ) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
         initialLockingPeriod =
             bound(initialLockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
 
@@ -264,7 +267,7 @@ contract StakingPoolTest is EdenTestBase {
     }
 
     function test_unstake(uint256 initialStakedAmount, uint256 lockingPeriod, uint256 invalidAmountToUnstake) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
         invalidAmountToUnstake = bound(invalidAmountToUnstake, _stakingPool.MINIMUM_STAKE_AMOUNT(), initialStakedAmount);
 
         lockingPeriod =
@@ -281,7 +284,7 @@ contract StakingPoolTest is EdenTestBase {
         uint256 lockingPeriod,
         uint256 invalidAmountToUnstake
     ) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
         invalidAmountToUnstake = bound(invalidAmountToUnstake, 0, _stakingPool.MINIMUM_STAKE_AMOUNT() - 1);
 
         lockingPeriod =
@@ -300,8 +303,8 @@ contract StakingPoolTest is EdenTestBase {
         uint256 lockingPeriod,
         uint256 amountToUnstake
     ) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY / 2);
-        amountToUnstake = bound(amountToUnstake, initialStakedAmount + 1, _TOKEN_SUPPLY);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY / 2);
+        amountToUnstake = bound(amountToUnstake, initialStakedAmount + 1, _AVAILABLE_SUPPLY);
 
         lockingPeriod =
             bound(lockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
@@ -320,7 +323,7 @@ contract StakingPoolTest is EdenTestBase {
         uint256 invalidAmountToUnstake,
         uint256 invalidUnstakeTimestamp
     ) public {
-        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _TOKEN_SUPPLY);
+        initialStakedAmount = bound(initialStakedAmount, _stakingPool.MINIMUM_STAKE_AMOUNT(), _AVAILABLE_SUPPLY);
         invalidAmountToUnstake = bound(invalidAmountToUnstake, _stakingPool.MINIMUM_STAKE_AMOUNT(), initialStakedAmount);
         lockingPeriod =
             bound(lockingPeriod, _stakingPool.MINIMUM_LOCKING_PERIOD(), _stakingPool.MAXIMUM_LOCKING_PERIOD());
@@ -335,7 +338,7 @@ contract StakingPoolTest is EdenTestBase {
     }
 
     function test_refreshDistributionFlow(uint256 amountToDistribute) public {
-        amountToDistribute = bound(amountToDistribute, 1e18, _TOKEN_SUPPLY);
+        amountToDistribute = bound(amountToDistribute, 1e18, _AVAILABLE_SUPPLY);
 
         dealSuperToken(TREASURY, address(_rewardController), _spirit, amountToDistribute);
 
@@ -345,9 +348,10 @@ contract StakingPoolTest is EdenTestBase {
         vm.stopPrank();
 
         int96 expectedFlowRate = int256(amountToDistribute / _stakingPool.STREAM_OUT_DURATION()).toInt96();
-        assertEq(
-            _stakingPool.distributionPool().getMemberFlowRate(address(_stakingPool)),
-            expectedFlowRate,
+        assertApproxEqAbs(
+            int256(_spirit.getFlowRate(address(_stakingPool), address(_stakingPool.distributionPool()))),
+            int256(expectedFlowRate),
+            uint256(int256(expectedFlowRate * 100 / 10_000)), // allow 1% error tolerance
             "Flow rate mismatch"
         );
     }
@@ -360,7 +364,7 @@ contract StakingPoolTest is EdenTestBase {
         vm.assume(notRewardController != address(_stakingPool.distributionPool()));
         vm.assume(notRewardController != address(0));
 
-        amountToDistribute = bound(amountToDistribute, 1e18, _TOKEN_SUPPLY);
+        amountToDistribute = bound(amountToDistribute, 1e18, _AVAILABLE_SUPPLY);
 
         dealSuperToken(TREASURY, notRewardController, _spirit, amountToDistribute);
 

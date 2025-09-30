@@ -34,8 +34,8 @@ contract EdenTestBase is Test {
     address internal immutable TREASURY = makeAddr("TREASURY");
     address internal immutable ADMIN = makeAddr("ADMIN");
     address internal immutable ALICE = makeAddr("ALICE");
-    address internal immutable BOB = makeAddr("BOB");
-    address internal immutable CAROL = makeAddr("CAROL");
+    address internal immutable ARTIST = makeAddr("ARTIST");
+    address internal immutable AGENT = makeAddr("AGENT");
 
     function setUp() public virtual {
         // Superfluid Protocol Deployment Start

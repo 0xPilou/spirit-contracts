@@ -19,6 +19,12 @@ using SafeCast for int256;
 
 contract StakingPool is IStakingPool, Initializable {
 
+    //      ____                          __        __    __        _____ __        __
+    //     /  _/___ ___  ____ ___  __  __/ /_____ _/ /_  / /__     / ___// /_____ _/ /____  _____
+    //     / // __ `__ \/ __ `__ \/ / / / __/ __ `/ __ \/ / _ \    \__ \/ __/ __ `/ __/ _ \/ ___/
+    //   _/ // / / / / / / / / / / /_/ / /_/ /_/ / /_/ / /  __/   ___/ / /_/ /_/ / /_/  __(__  )
+    //  /___/_/ /_/ /_/_/ /_/ /_/\__,_/\__/\__,_/_.___/_/\___/   /____/\__/\__,_/\__/\___/____/
+
     ISuperToken public immutable SPIRIT;
     address public immutable REWARD_CONTROLLER;
     ISuperToken public child;
@@ -35,6 +41,14 @@ contract StakingPool is IStakingPool, Initializable {
     uint256 public constant MULTIPLIER_RANGE = MAX_MULTIPLIER - MIN_MULTIPLIER;
 
     uint256 private constant _DOWNSCALER = 1e18;
+    uint256 private constant _STAKEHOLDER_AMOUNT = 250_000_000 ether;
+    uint256 private constant _STAKEHOLDER_LOCKING_PERIOD = 52 weeks;
+
+    //     _____ __        __
+    //    / ___// /_____ _/ /____  _____
+    //    \__ \/ __/ __ `/ __/ _ \/ ___/
+    //   ___/ / /_/ /_/ / /_/  __(__  )
+    //  /____/\__/\__,_/\__/\___/____/
 
     ISuperfluidPool public distributionPool;
 
@@ -53,7 +67,7 @@ contract StakingPool is IStakingPool, Initializable {
         REWARD_CONTROLLER = _rewardController;
     }
 
-    function initialize(ISuperToken _child) external initializer {
+    function initialize(ISuperToken _child, address artist, address agent) external initializer {
         child = _child;
 
         // Superfluid GDA Pool configuration
@@ -63,8 +77,12 @@ contract StakingPool is IStakingPool, Initializable {
         // Create Superfluid GDA Pool
         distributionPool = SPIRIT.createPool(address(this), poolConfig);
 
-        // Bootstrap the pool with 1 unit for the PoolAdmin itself (this contract)
+        // Bootstrap the pool with 1 unit for the PoolAdmin itself
+        // Note : ensure that even if every stakers unstake, the distribution flow will keep running
         distributionPool.updateMemberUnits(address(this), 1);
+
+        _stake(artist, _STAKEHOLDER_AMOUNT, _STAKEHOLDER_LOCKING_PERIOD);
+        _stake(agent, _STAKEHOLDER_AMOUNT, _STAKEHOLDER_LOCKING_PERIOD);
     }
 
     //      ______     __                        __   ______                 __  _
@@ -74,34 +92,7 @@ contract StakingPool is IStakingPool, Initializable {
     //  /_____/_/|_|\__/\___/_/  /_/ /_/\__,_/_/  /_/    \__,_/_/ /_/\___/\__/_/\____/_/ /_/____/
 
     function stake(uint256 amount, uint256 lockingPeriod) external {
-        StakingInfo storage userStakingInfo = _stakingInfo[msg.sender];
-
-        // Check if user has already staked tokens
-        if (userStakingInfo.lockedUntil > 0) {
-            revert ALREADY_STAKED();
-        }
-
-        if (amount < MINIMUM_STAKE_AMOUNT) {
-            revert INVALID_STAKE_AMOUNT();
-        }
-
-        // Validate locking period
-        if (lockingPeriod < MINIMUM_LOCKING_PERIOD || lockingPeriod > MAXIMUM_LOCKING_PERIOD) {
-            revert INVALID_LOCKING_PERIOD();
-        }
-
-        // Calculate bonus multiplier based on locking period
-        uint256 multiplier = calculateMultiplier(lockingPeriod);
-
-        // Calculate units with multiplier applied (multiplier is in basis points)
-        uint128 units = uint128((amount / _DOWNSCALER) * multiplier / MIN_MULTIPLIER);
-
-        // Store staking information
-        userStakingInfo.stakedAmount = amount;
-        userStakingInfo.lockedUntil = block.timestamp + lockingPeriod;
-
-        distributionPool.updateMemberUnits(msg.sender, units);
-        child.transferFrom(msg.sender, address(this), amount);
+        _stake(msg.sender, amount, lockingPeriod);
     }
 
     function increaseStake(uint256 amount) external {
@@ -231,6 +222,39 @@ contract StakingPool is IStakingPool, Initializable {
 
     function getStakingInfo(address staker) external view returns (StakingInfo memory stakingInfo) {
         stakingInfo = _stakingInfo[staker];
+    }
+
+    // INTERNAL FUNCTIONS
+
+    function _stake(address staker, uint256 amount, uint256 lockingPeriod) internal {
+        StakingInfo storage userStakingInfo = _stakingInfo[staker];
+
+        // Check if user has already staked tokens
+        if (userStakingInfo.lockedUntil > 0) {
+            revert ALREADY_STAKED();
+        }
+
+        if (amount < MINIMUM_STAKE_AMOUNT) {
+            revert INVALID_STAKE_AMOUNT();
+        }
+
+        // Validate locking period
+        if (lockingPeriod < MINIMUM_LOCKING_PERIOD || lockingPeriod > MAXIMUM_LOCKING_PERIOD) {
+            revert INVALID_LOCKING_PERIOD();
+        }
+
+        // Calculate bonus multiplier based on locking period
+        uint256 multiplier = calculateMultiplier(lockingPeriod);
+
+        // Calculate units with multiplier applied (multiplier is in basis points)
+        uint128 units = uint128((amount / _DOWNSCALER) * multiplier / MIN_MULTIPLIER);
+
+        // Store staking information
+        userStakingInfo.stakedAmount = amount;
+        userStakingInfo.lockedUntil = block.timestamp + lockingPeriod;
+
+        distributionPool.updateMemberUnits(staker, units);
+        child.transferFrom(msg.sender, address(this), amount);
     }
 
     //      __  ___          ___ _____
