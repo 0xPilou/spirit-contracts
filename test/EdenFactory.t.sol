@@ -22,19 +22,46 @@ contract EdenFactoryTest is EdenTestBase {
         (ISuperToken newChildToken, IStakingPool newStakingPool) =
             _edenFactory.createChild("New Child Token", "NEWCHILD", ARTIST, AGENT);
 
+        // State settings assertions
         assertNotEq(address(newChildToken), address(0), "Invalid child token address");
         assertNotEq(address(newStakingPool), address(0), "Invalid staking pool address");
-        assertEq(newChildToken.totalSupply(), _edenFactory.DEFAULT_SUPPLY(), "Invalid minted supply");
         assertEq(address(newStakingPool.child()), address(newChildToken), "Child token mismatch");
         assertEq(address(newStakingPool.SPIRIT()), address(_spirit), "SPIRIT token mismatch");
         assertEq(address(newStakingPool.REWARD_CONTROLLER()), address(_rewardController), "Reward controller mismatch");
         assertEq(
-            newStakingPool.distributionPool().getUnits(address(newStakingPool)), 1, "Distribution pool units mismatch"
-        );
-        assertEq(
             address(_rewardController.stakingPools(address(newChildToken))),
             address(newStakingPool),
             "Staking pool mismatch"
+        );
+
+        // Token Supply Assertions
+        assertEq(newChildToken.totalSupply(), _edenFactory.DEFAULT_SUPPLY(), "Invalid minted supply");
+        assertEq(newChildToken.balanceOf(ARTIST), 0, "Artist should not have floating CHILD tokens");
+        assertEq(newChildToken.balanceOf(AGENT), 0, "Agent should not have floating CHILD tokens");
+        assertEq(
+            newChildToken.balanceOf(address(newStakingPool)),
+            500_000_000 ether,
+            "Staking Pool should have 500M CHILD tokens (ARTIST and AGENT shares)"
+        );
+        assertEq(
+            newChildToken.balanceOf(address(ADMIN)),
+            500_000_000 ether,
+            "Admin should have 500M CHILD tokens (ADMIN share)"
+        );
+
+        // GDA Settings Assertions
+        assertEq(
+            newStakingPool.distributionPool().getUnits(address(newStakingPool)), 1, "Distribution pool units mismatch"
+        );
+        assertEq(
+            newStakingPool.distributionPool().getUnits(address(ARTIST)),
+            newStakingPool.calculateMultiplier(52 weeks) * 250_000_000 / newStakingPool.MIN_MULTIPLIER(),
+            "ARTIST should have 250M CHILD tokens locked for 12 months worth of units"
+        );
+        assertEq(
+            newStakingPool.distributionPool().getUnits(address(AGENT)),
+            newStakingPool.calculateMultiplier(52 weeks) * 250_000_000 / newStakingPool.MIN_MULTIPLIER(),
+            "AGENT should have 250M CHILD tokens locked for 12 months worth of units"
         );
     }
 
