@@ -1,0 +1,41 @@
+[
+  {
+    "type": "function",
+    "name": "createChild",
+    "inputs": [
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "symbol",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "artist",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "child",
+        "type": "address",
+        "internalType": "contract ISuperToken"
+      },
+      {
+        "name": "stakingPool",
+        "type": "address",
+        "internalType": "contract IStakingPool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  }
+]

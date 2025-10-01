@@ -1,0 +1,58 @@
+[
+  {
+    "type": "function",
+    "name": "distributeRewards",
+    "inputs": [
+      {
+        "name": "child",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setStakingPool",
+    "inputs": [
+      {
+        "name": "child",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "stakingPool",
+        "type": "address",
+        "internalType": "contract IStakingPool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "error",
+    "name": "INVALID_AMOUNT",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "INVALID_CHILD",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "STAKING_POOL_ALREADY_SET",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "STAKING_POOL_NOT_FOUND",
+    "inputs": []
+  }
+]
