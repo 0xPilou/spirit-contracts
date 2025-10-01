@@ -25,15 +25,6 @@ contract DeployEden is Script {
     function run() external {
         uint256 chainId = block.chainid;
 
-        // Start broadcasting transactions
-        address deployer = _startBroadcast();
-
-        console.log("");
-        console.log("===> DEPLOYING EDEN PROTOCOL");
-        console.log(" --- Chain ID          :   ", chainId);
-        console.log(" --- Deployer address  :   ", deployer);
-        console.log(" --- Deployer balance  :   ", deployer.balance / 1e18, "ETH");
-
         // Get Base mainnet configuration
         NetworkConfig.EdenDeploymentConfig memory config = NetworkConfig.getNetworkConfig(chainId);
 
@@ -46,6 +37,14 @@ contract DeployEden is Script {
         console.log(" --- Spirit Token Name     :", config.spiritTokenName);
         console.log(" --- Spirit Token Symbol   :", config.spiritTokenSymbol);
         console.log(" --- Spirit Token Supply   :", config.spiritTokenSupply / 1e18);
+
+        // Start broadcasting transactions
+        address deployer = _startBroadcast();
+        console.log("");
+        console.log("===> DEPLOYING EDEN PROTOCOL");
+        console.log(" --- Chain ID          :   ", chainId);
+        console.log(" --- Deployer address  :   ", deployer);
+        console.log(" --- Deployer balance  :   ", deployer.balance / 1e18, "ETH");
 
         // Deploy Eden Protocol
         EdenDeployer.EdenDeploymentResult memory result = EdenDeployer.deployAll(config, deployer);

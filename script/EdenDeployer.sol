@@ -28,8 +28,8 @@ library EdenDeployer {
         address edenFactoryProxy;
     }
 
-    function deployAll(NetworkConfig.EdenDeploymentConfig calldata config, address deployer)
-        public
+    function deployAll(NetworkConfig.EdenDeploymentConfig memory config, address deployer)
+        internal
         returns (EdenDeploymentResult memory results)
     {
         // Contracts Deployment
@@ -50,8 +50,7 @@ library EdenDeployer {
         internal
         returns (EdenDeploymentResult memory results)
     {
-        bytes32 salt = keccak256(abi.encode(config.spiritTokenName, config.spiritTokenSymbol));
-        results.spirit = address(new SpiritToken{ salt: salt }());
+        results.spirit = address(new SpiritToken());
 
         // Initialize the new SpiritToken contract
         ISpiritToken(results.spirit).initialize(
@@ -64,7 +63,7 @@ library EdenDeployer {
     }
 
     function _deployInfrastructure(
-        NetworkConfig.EdenDeploymentConfig calldata config,
+        NetworkConfig.EdenDeploymentConfig memory config,
         EdenDeploymentResult memory results
     ) internal returns (EdenDeploymentResult memory) {
         // Deploy the Reward Controller contract
