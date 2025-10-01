@@ -133,4 +133,131 @@ ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
 
 ## BASE SEPOLIA
 
-> TBA
+### Contract Addresses
+
+| Contract              | Contract Address                                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| EDEN Multisig         | [`0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A`](https://sepolia.basescan.org/address/0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A) |
+| SPIRIT Token          | [`0xA5bb023d0a9B5264EAaaA96B097FF2dE6902Be01`](https://sepolia.basescan.org/address/0xA5bb023d0a9B5264EAaaA96B097FF2dE6902Be01) |
+| Reward Controller     | [`0x79bACAec6204e6457Bf1Ee9607392D60f20BB8A6`](https://sepolia.basescan.org/address/0x79bACAec6204e6457Bf1Ee9607392D60f20BB8A6) |
+| Staking Pool (Beacon) | [`0x7813Ca488A9d4Ad5f72Af7b42999f8a9aF70facc`](https://sepolia.basescan.org/address/0x7813Ca488A9d4Ad5f72Af7b42999f8a9aF70facc) |
+| Eden Factory          | [`0x95c802453D26FA3CD7ea7e519Aa201E227a08A2A`](https://sepolia.basescan.org/address/0x95c802453D26FA3CD7ea7e519Aa201E227a08A2A) |
+
+### Logs
+
+```shell
+forge script script/Deploy.s.sol:DeployEden --rpc-url $BASE_SEPOLIA_RPC_URL --account TESTNET_DEPLOYER --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
+Enter keystore password:
+Script ran successfully.
+
+== Logs ==
+
+  ===> DEPLOYMENT CONFIGURATION
+   --- Admin address         : 0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A
+   --- Treasury address      : 0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A
+   --- Distributor address   : 0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A
+   --- Super Token Factory   : 0x7447E94Dfe3d804a9f46Bf12838d467c912C8F6C
+   --- Spirit Token Name     : Secret Token
+   --- Spirit Token Symbol   : SECRET
+   --- Spirit Token Supply   : 1000000000
+
+  ===> DEPLOYING EDEN PROTOCOL
+   --- Chain ID          :    84532
+   --- Deployer address  :    0x48CA32c738DC2Af6cE8bB33934fF1b59cF8B1831
+   --- Deployer balance  :    52 ETH
+
+  ===> DEPLOYMENT RESULTS
+   --- Spirit Token         : 0xA5bb023d0a9B5264EAaaA96B097FF2dE6902Be01
+   --- Reward Controller    : 0x79bACAec6204e6457Bf1Ee9607392D60f20BB8A6
+   --- Staking Pool         : 0x7813Ca488A9d4Ad5f72Af7b42999f8a9aF70facc
+   --- Eden Factory         : 0x95c802453D26FA3CD7ea7e519Aa201E227a08A2A
+
+
+## Setting up 1 EVM.
+
+==========================
+
+Chain 84532
+
+Estimated gas price: 0.001000153 gwei
+
+Estimated total gas used for script: 6403758
+
+Estimated amount required: 0.000006404737774974 ETH
+
+==========================
+
+##### base-sepolia
+✅  [Success] Hash: 0x3373cf7d6e4f4dde45bdbebf3a1f7e8c3d2a0d4ddb130c84349b063f6dd36265
+Block: 31781082
+Paid: 0.000000032025401725 ETH (32023 gas * 0.001000075 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0xf962c588688dc6dedff650ac4962e46d75c07dfd2e66251078dd3fa81cd072ff
+Contract Address: 0xA5bb023d0a9B5264EAaaA96B097FF2dE6902Be01
+Block: 31781082
+Paid: 0.0000003376973254 ETH (337672 gas * 0.001000075 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0xebda04a0b7911be355c8fefeb8cd2ef1ecceaf71709fa1ac37dbf894ac991107
+Block: 31781082
+Paid: 0.00000026598594745 ETH (265966 gas * 0.001000075 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x73efb6ae572eca5c780e382ef8b7196e00d56cd801e95993b678482669f125b9
+Contract Address: 0x7813Ca488A9d4Ad5f72Af7b42999f8a9aF70facc
+Block: 31781082
+Paid: 0.000000249359700575 ETH (249341 gas * 0.001000075 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x79f746a49bac37e12df727f636fe4bca4f44833c82c7c6738107a53544c041c3
+Contract Address: 0x79bACAec6204e6457Bf1Ee9607392D60f20BB8A6
+Block: 31781082
+Paid: 0.0000002287011513 ETH (228684 gas * 0.001000075 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0xdf226413943d407e115dbb143ecb62a4d0bf6e4116606128063c055e637cfbc4
+Block: 31781082
+Paid: 0.000000056353226175 ETH (56349 gas * 0.001000075 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x726981fb92bd5009620b8a5ae002211c50534c977292996ec2619ce047a7f4e7
+Contract Address: 0x3C148fc155d001c247d41521bf550e6D0f3b6158
+Block: 31781082
+Paid: 0.000000764722349875 ETH (764665 gas * 0.001000075 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x89660fa26234d75271bc8714e27ad084151adeb5f03fcfb5c26c337b0ea19d75
+Contract Address: 0x95c802453D26FA3CD7ea7e519Aa201E227a08A2A
+Block: 31781082
+Paid: 0.00000017952746355 ETH (179514 gas * 0.001000075 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x3abbed6825948b214b40340321d521a0d5c8963b31651281ec950b254b443928
+Contract Address: 0x0b859eDf1a58cbD032602495CAe4721aBC5b4a02
+Block: 31781082
+Paid: 0.000001517294788575 ETH (1517181 gas * 0.001000075 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x060cb431df0017ddfe15d8319c90c6adaa5e4313e809f43b2b3ff4de8862eacd
+Contract Address: 0x04656dBC0a9e88aeE72b4766783fF29DB30CF824
+Block: 31781082
+Paid: 0.000001272526432325 ETH (1272431 gas * 0.001000075 gwei)
+
+✅ Sequence #1 on base-sepolia | Total Paid: 0.00000490419378695 ETH (4903826 gas * avg 0.001000075 gwei)
+
+
+==========================
+
+ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
+##
+```
