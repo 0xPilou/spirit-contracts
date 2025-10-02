@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { IERC721 } from "@openzeppelin-v5/contracts/token/ERC721/IERC721.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 import { EdenTestBase } from "test/base/EdenTestBase.t.sol";
@@ -43,10 +44,21 @@ contract EdenFactoryTest is EdenTestBase {
             500_000_000 ether,
             "Staking Pool should have 500M CHILD tokens (ARTIST and AGENT shares)"
         );
+
+        assertEq(
+            newChildToken.balanceOf(address(manager)),
+            475_000_000 ether,
+            "UniswapV4 Pool Manager should have 475M CHILD tokens (Liquidity)"
+        );
+
         assertEq(
             newChildToken.balanceOf(address(ADMIN)),
-            500_000_000 ether,
+            25_000_000 ether,
             "Admin should have 500M CHILD tokens (ADMIN share)"
+        );
+
+        assertEq(
+            IERC721(address(positionManager)).balanceOf(address(ADMIN)), 1, "ADMIN should own 1 UniswapV4 Position NFT"
         );
 
         // GDA Settings Assertions

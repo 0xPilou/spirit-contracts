@@ -17,7 +17,7 @@ contract StakingPoolTest is EdenTestBase {
     IStakingPool internal _stakingPool;
     ISuperToken internal _childToken;
 
-    uint256 internal constant _AVAILABLE_SUPPLY = 500_000_000 ether;
+    uint256 internal constant _AVAILABLE_SUPPLY = 25_000_000 ether;
     uint256 internal constant _DOWNSCALER = 1e18;
 
     function setUp() public override {
