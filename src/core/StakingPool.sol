@@ -120,7 +120,7 @@ contract StakingPool is IStakingPool, Initializable {
         }
 
         // Calculate units with multiplier applied
-        uint128 unitsToAdd = uint128((amount / _DOWNSCALER) * multiplier / MIN_MULTIPLIER);
+        uint128 unitsToAdd = uint128((amount * multiplier) / (MIN_MULTIPLIER * _DOWNSCALER));
 
         // Store staking information
         userStakingInfo.stakedAmount += amount;
@@ -150,7 +150,7 @@ contract StakingPool is IStakingPool, Initializable {
         uint256 multiplier = calculateMultiplier(newLockingPeriod);
 
         // Calculate units with multiplier applied
-        uint128 unitsToAdd = uint128((userStakingInfo.stakedAmount / _DOWNSCALER) * multiplier / MIN_MULTIPLIER);
+        uint128 unitsToAdd = uint128((userStakingInfo.stakedAmount * multiplier) / (MIN_MULTIPLIER * _DOWNSCALER));
 
         // Update the user's locking details
         userStakingInfo.lockedUntil = block.timestamp + newLockingPeriod;
@@ -247,7 +247,7 @@ contract StakingPool is IStakingPool, Initializable {
         uint256 multiplier = calculateMultiplier(lockingPeriod);
 
         // Calculate units with multiplier applied (multiplier is in basis points)
-        uint128 units = uint128((amount / _DOWNSCALER) * multiplier / MIN_MULTIPLIER);
+        uint128 units = uint128((amount * multiplier) / (MIN_MULTIPLIER * _DOWNSCALER));
 
         // Store staking information
         userStakingInfo.stakedAmount = amount;

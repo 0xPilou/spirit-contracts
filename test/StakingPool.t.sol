@@ -446,7 +446,7 @@ contract StakingPoolTest is EdenTestBase {
             : _stakingPool.MIN_MULTIPLIER();
 
         uint128 expectedNewUnits =
-            uint128((amountToStake / _DOWNSCALER) * expectedMultiplier / _stakingPool.MIN_MULTIPLIER());
+            uint128((amountToStake * expectedMultiplier) / (_stakingPool.MIN_MULTIPLIER() * _DOWNSCALER));
 
         assertEq(_stakingPool.distributionPool().getUnits(staker), initialUnits + expectedNewUnits, "Units mismatch");
 
@@ -489,8 +489,8 @@ contract StakingPoolTest is EdenTestBase {
             _stakingPool.calculateMultiplier(_stakingPool.getStakingInfo(staker).lockedUntil - block.timestamp);
 
         uint128 expectedAddedUnits = uint128(
-            (_stakingPool.getStakingInfo(staker).stakedAmount / _DOWNSCALER) * expectedMultiplier
-                / _stakingPool.MIN_MULTIPLIER()
+            (_stakingPool.getStakingInfo(staker).stakedAmount * expectedMultiplier)
+                / (_stakingPool.MIN_MULTIPLIER() * _DOWNSCALER)
         );
 
         assertEq(_stakingPool.distributionPool().getUnits(staker), initialUnits + expectedAddedUnits, "Units mismatch");
