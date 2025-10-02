@@ -16,6 +16,10 @@ import { IRewardController } from "src/interfaces/core/IRewardController.sol";
 import { ISpiritToken } from "src/interfaces/token/ISpiritToken.sol";
 import { SpiritToken } from "src/token/SpiritToken.sol";
 
+import { IPoolManager } from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import { IPermit2 } from "@uniswap/v4-periphery/lib/permit2/src/interfaces/IPermit2.sol";
+import { IPositionManager } from "@uniswap/v4-periphery/src/interfaces/IPositionManager.sol";
+
 library EdenDeployer {
 
     struct EdenDeploymentResult {
@@ -81,7 +85,10 @@ library EdenDeployer {
         EdenFactory edenFactoryLogic = new EdenFactory(
             address(stakingPoolBeacon),
             IRewardController(address(rewardControllerProxy)),
-            ISuperTokenFactory(config.superTokenFactory)
+            ISuperTokenFactory(config.superTokenFactory),
+            IPositionManager(config.positionManager),
+            IPoolManager(config.poolManager),
+            IPermit2(config.permit2)
         );
         ERC1967Proxy edenFactoryProxy = new ERC1967Proxy(
             address(edenFactoryLogic), abi.encodeWithSelector(EdenFactory.initialize.selector, config.admin)
