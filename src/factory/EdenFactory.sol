@@ -201,7 +201,7 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
         actions[1] = bytes1(uint8(Actions.SETTLE_PAIR));
 
         bytes[] memory params = new bytes[](2);
-        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0, amount1, address(this), bytes(""));
+        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0, amount1, msg.sender, bytes(""));
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
 
         _approvePermit2(childToken, childTokenAmount);
