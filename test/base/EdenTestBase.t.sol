@@ -3,9 +3,6 @@ pragma solidity ^0.8.26;
 
 import "forge-std/Test.sol";
 
-import { ERC1967Proxy } from "@openzeppelin-v5/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
-import { UpgradeableBeacon } from "@openzeppelin-v5/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import { ERC1820RegistryCompiled } from
     "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
@@ -18,10 +15,10 @@ import { EdenDeployer } from "script/EdenDeployer.sol";
 import { NetworkConfig } from "script/config/NetworkConfig.sol";
 
 import { RewardController } from "src/core/RewardController.sol";
-import { StakingPool } from "src/core/StakingPool.sol";
 import { EdenFactory } from "src/factory/EdenFactory.sol";
+import { UniswapDeployer } from "test/utils/UniswapDeployer.sol";
 
-contract EdenTestBase is Test {
+contract EdenTestBase is UniswapDeployer {
 
     using SuperTokenV1Library for ISuperToken;
 
@@ -41,7 +38,7 @@ contract EdenTestBase is Test {
     address internal immutable ARTIST = makeAddr("ARTIST");
     address internal immutable AGENT = makeAddr("AGENT");
 
-    function setUp() public virtual {
+    function setUp() public virtual override {
         // Superfluid Protocol Deployment Start
         vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);
         _deployer = new SuperfluidFrameworkDeployer();
@@ -49,7 +46,7 @@ contract EdenTestBase is Test {
         _sf = _deployer.getFramework();
         // Superfluid Protocol Deployment End
 
-        /// FIXME : add UNISWAP V4 Deployment here
+        UniswapDeployer.setUp();
 
         NetworkConfig.EdenDeploymentConfig memory config = NetworkConfig.getLocalConfig();
 
@@ -57,9 +54,11 @@ contract EdenTestBase is Test {
         config.distributor = ADMIN;
         config.treasury = TREASURY;
         config.superTokenFactory = address(_sf.superTokenFactory);
+        config.positionManager = address(positionManager);
+        config.poolManager = address(manager);
+        config.permit2 = address(permit2);
 
         // Deploy the contracts under test
-        // _deployAll();
         vm.startPrank(DEPLOYER);
         EdenDeployer.EdenDeploymentResult memory result = EdenDeployer.deployAll(config, DEPLOYER);
         vm.stopPrank();
