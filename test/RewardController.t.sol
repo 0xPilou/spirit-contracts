@@ -97,6 +97,7 @@ contract RewardControllerTest is EdenTestBase {
 
     function test_distributeRewards_invalid_caller(address invalidCaller, uint256 amount) public {
         vm.assume(_rewardController.hasRole(_rewardController.DISTRIBUTOR_ROLE(), invalidCaller) != true);
+        vm.assume(invalidCaller != address(0));
 
         amount = bound(amount, 1 ether, _spirit.balanceOf(TREASURY));
         dealSuperToken(TREASURY, ADMIN, _spirit, amount);
