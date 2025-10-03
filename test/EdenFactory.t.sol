@@ -36,7 +36,7 @@ contract EdenFactoryTest is EdenTestBase {
         );
 
         // Token Supply Assertions
-        assertEq(newChildToken.totalSupply(), _edenFactory.DEFAULT_SUPPLY(), "Invalid minted supply");
+        assertEq(newChildToken.totalSupply(), _edenFactory.CHILD_TOTAL_SUPPLY(), "Invalid minted supply");
         assertEq(newChildToken.balanceOf(ARTIST), 0, "Artist should not have floating CHILD tokens");
         assertEq(newChildToken.balanceOf(AGENT), 0, "Agent should not have floating CHILD tokens");
         assertEq(

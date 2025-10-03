@@ -54,7 +54,8 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
 
     uint160 public constant SQRT_PRICE_1_1 = 79_228_162_514_264_337_593_543_950_336;
 
-    uint256 public constant DEFAULT_SUPPLY = 1_000_000_000 ether;
+    uint256 public constant CHILD_TOTAL_SUPPLY = 1_000_000_000 ether;
+    uint256 public constant DEFAULT_LIQUIDITY_SUPPLY = 475_000_000 ether;
 
     /// FIXME : Confirm this value
     uint24 public constant DEFAULT_POOL_FEE = 10_000;
@@ -100,7 +101,7 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
         returns (ISuperToken child, IStakingPool stakingPool)
     {
         // deploy the new child token with default 1B supply to the caller (admin)
-        child = ISuperToken(_deployToken(name, symbol, DEFAULT_SUPPLY));
+        child = ISuperToken(_deployToken(name, symbol, CHILD_TOTAL_SUPPLY));
 
         // Deploy a new StakingPool contract associated to the child token
         stakingPool = IStakingPool(_deployStakingPool(address(child), artist, agent));
@@ -109,7 +110,8 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
         REWARD_CONTROLLER.setStakingPool(address(child), stakingPool);
 
         // Create the Uniswap V4 pool and mint liquidity position for 475M CHILD (single sided)
-        _setupUniswapPool(address(child), 475_000_000 ether, SQRT_PRICE_1_1);
+        /// FIXME : pass SQRT Price to this function args.
+        _setupUniswapPool(address(child), DEFAULT_LIQUIDITY_SUPPLY, SQRT_PRICE_1_1);
 
         // Transfer the remaining 500M CHILD to the caller (admin)
         child.transfer(msg.sender, child.balanceOf(address(this)));
