@@ -1,13 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+/* Openzeppelin Imports */
 import { ERC1967Proxy } from "@openzeppelin-v5/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { UpgradeableBeacon } from "@openzeppelin-v5/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
+/* Superfluid Imports */
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import { ISuperTokenFactory } from
     "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperTokenFactory.sol";
 
+/* Uniswap Imports */
+import { IHooks } from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import { IPoolManager } from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+
+import { StateLibrary } from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
+import { TickMath } from "@uniswap/v4-core/src/libraries/TickMath.sol";
+import { Currency } from "@uniswap/v4-core/src/types/Currency.sol";
+import { PoolIdLibrary } from "@uniswap/v4-core/src/types/PoolId.sol";
+import { PoolKey } from "@uniswap/v4-core/src/types/PoolKey.sol";
+import { IPermit2 } from "@uniswap/v4-periphery/lib/permit2/src/interfaces/IPermit2.sol";
+import { IPositionManager } from "@uniswap/v4-periphery/src/interfaces/IPositionManager.sol";
+import { Actions } from "@uniswap/v4-periphery/src/libraries/Actions.sol";
+import { LiquidityAmounts } from "@uniswap/v4-periphery/src/libraries/LiquidityAmounts.sol";
+
+/* Local Imports */
 import { NetworkConfig } from "script/config/NetworkConfig.sol";
 import { RewardController } from "src/core/RewardController.sol";
 import { StakingPool } from "src/core/StakingPool.sol";
@@ -15,10 +32,6 @@ import { EdenFactory } from "src/factory/EdenFactory.sol";
 import { IRewardController } from "src/interfaces/core/IRewardController.sol";
 import { ISpiritToken } from "src/interfaces/token/ISpiritToken.sol";
 import { SpiritToken } from "src/token/SpiritToken.sol";
-
-import { IPoolManager } from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import { IPermit2 } from "@uniswap/v4-periphery/lib/permit2/src/interfaces/IPermit2.sol";
-import { IPositionManager } from "@uniswap/v4-periphery/src/interfaces/IPositionManager.sol";
 
 library EdenDeployer {
 
@@ -30,6 +43,7 @@ library EdenDeployer {
         address stakingPoolBeacon;
         address edenFactoryLogic;
         address edenFactoryProxy;
+        PoolKey spiritEthPoolKey;
     }
 
     function deployAll(NetworkConfig.EdenDeploymentConfig memory config, address deployer)
@@ -39,8 +53,22 @@ library EdenDeployer {
         // Contracts Deployment
 
         // Deploy the Spirit Token Contract
-        results = _deploySpiritToken(config);
+        results = _deploySpiritToken(config, deployer);
 
+        // Setup UniswapV4 SPIRIT/ETH pool
+        results = _setupUniswapPool(config, results);
+
+        // Mint the liquidity position for the SPIRIT/ETH pool
+        /// FIXME : This only deploy 1 slice of liquidity (38k to infinity MCAP) - consider BANGER Model
+        _deployLiquidity(config, results);
+
+        /// FIXME: Create Vesting For Team (?)
+        /// FIXME: Create Vesting For Eden Ops (?)
+
+        // Transfer the SPIRIT Tokens to the Treasury
+        /// FIXME : Either this or create airstreams for community airdrop
+        ISuperToken(results.spirit).transfer(config.treasury, ISuperToken(results.spirit).balanceOf(deployer));
+        
         // Deploy the Infrastructure Contracts
         results = _deployInfrastructure(config, results);
 
@@ -50,7 +78,7 @@ library EdenDeployer {
         rc.revokeRole(rc.DEFAULT_ADMIN_ROLE(), deployer);
     }
 
-    function _deploySpiritToken(NetworkConfig.EdenDeploymentConfig memory config)
+    function _deploySpiritToken(NetworkConfig.EdenDeploymentConfig memory config, address deployer)
         internal
         returns (EdenDeploymentResult memory results)
     {
@@ -61,7 +89,7 @@ library EdenDeployer {
             ISuperTokenFactory(config.superTokenFactory),
             config.spiritTokenName,
             config.spiritTokenSymbol,
-            config.treasury,
+            deployer,
             config.spiritTokenSupply
         );
     }
@@ -102,6 +130,102 @@ library EdenDeployer {
         results.edenFactoryProxy = address(edenFactoryProxy);
 
         return results;
+    }
+
+    /// LIQUIDITY SETUP FUNCTIONS
+    function _setupUniswapPool(NetworkConfig.EdenDeploymentConfig memory config, EdenDeploymentResult memory results)
+        internal
+        returns (EdenDeploymentResult memory)
+    {
+        // Pool ordering
+        bool spiritIsZero = results.spirit < config.weth;
+
+        // Ensure tokens are in the correct order (lower address first)
+        Currency currency0 = spiritIsZero ? Currency.wrap(results.spirit) : Currency.wrap(config.weth);
+        Currency currency1 = spiritIsZero ? Currency.wrap(config.weth) : Currency.wrap(results.spirit);
+
+        // Create the pool key
+        results.spiritEthPoolKey = PoolKey({
+            currency0: currency0,
+            currency1: currency1,
+            fee: config.spiritPoolFee,
+            tickSpacing: config.spiritTickSpacing,
+            hooks: IHooks(address(0))
+        });
+
+        // Flip tick if SPIRIT is not Uniswap Pool's token0
+        int24 tick = spiritIsZero ? config.spiritInitialTick : -config.spiritInitialTick;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(tick);
+
+        // Initialize the pool
+        IPositionManager(config.positionManager).initializePool(results.spiritEthPoolKey, sqrtPriceX96);
+
+        return results;
+    }
+
+    function _deployLiquidity(NetworkConfig.EdenDeploymentConfig memory config, EdenDeploymentResult memory results)
+        internal
+    {
+        (uint256 amount0, uint256 amount1, uint128 liquidity, int24 tickLower, int24 tickUpper) =
+            _orderParams(config, results.spirit, config.spiritTokenLiquiditySupply, results.spiritEthPoolKey);
+
+        bytes memory actions = new bytes(2);
+        actions[0] = bytes1(uint8(Actions.MINT_POSITION));
+        actions[1] = bytes1(uint8(Actions.SETTLE_PAIR));
+
+        bytes[] memory params = new bytes[](2);
+        params[0] = abi.encode(
+            results.spiritEthPoolKey, tickLower, tickUpper, liquidity, amount0, amount1, config.treasury, bytes("")
+        );
+        params[1] = abi.encode(results.spiritEthPoolKey.currency0, results.spiritEthPoolKey.currency1);
+
+        _approvePermit2(config, results.spirit, config.spiritTokenLiquiditySupply);
+
+        // Execute the minting transaction
+        IPositionManager(config.positionManager).modifyLiquidities(abi.encode(actions, params), block.timestamp + 60);
+    }
+
+    function _orderParams(
+        NetworkConfig.EdenDeploymentConfig memory config,
+        address spiritToken,
+        uint256 spiritTokenAmount,
+        PoolKey memory poolKey
+    ) internal view returns (uint256 amount0, uint256 amount1, uint128 liquidity, int24 tickLower, int24 tickUpper) {
+        bool spiritIsZero = poolKey.currency0 == Currency.wrap(spiritToken);
+
+        // Calculate the liquidity based on provided amounts and current price
+        (uint160 sqrtPriceX96, int24 tick,,) =
+            StateLibrary.getSlot0(IPoolManager(config.poolManager), PoolIdLibrary.toId(poolKey));
+
+        if (spiritIsZero) {
+            amount0 = spiritTokenAmount;
+            amount1 = 0;
+            tickLower = tick;
+            tickUpper = (TickMath.MAX_TICK / config.spiritTickSpacing) * config.spiritTickSpacing;
+        } else {
+            amount0 = 0;
+            amount1 = spiritTokenAmount;
+            tickLower = (TickMath.MIN_TICK / config.spiritTickSpacing) * config.spiritTickSpacing;
+            tickUpper = tick;
+        }
+
+        liquidity = LiquidityAmounts.getLiquidityForAmounts(
+            sqrtPriceX96,
+            TickMath.getSqrtPriceAtTick(tickLower),
+            TickMath.getSqrtPriceAtTick(tickUpper),
+            amount0,
+            amount1
+        );
+    }
+
+    function _approvePermit2(NetworkConfig.EdenDeploymentConfig memory config, address spiritToken, uint256 amount)
+        internal
+    {
+        // Approve token for spending via Permit2
+        ISuperToken(spiritToken).approve(config.permit2, amount);
+        IPermit2(config.permit2).approve(
+            spiritToken, address(config.positionManager), uint160(amount), uint48(block.timestamp + 60)
+        );
     }
 
 }
