@@ -17,6 +17,11 @@ import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 using SuperTokenV1Library for ISuperToken;
 using SafeCast for int256;
 
+/**
+ * @title StakingPool
+ * @notice StakingPool contract
+ * @dev This contract is used by users to stake CHILD tokens and receive SPIRIT rewards
+ */
 contract StakingPool is IStakingPool, Initializable {
 
     //      ____                          __        __    __        _____ __        __
@@ -25,23 +30,46 @@ contract StakingPool is IStakingPool, Initializable {
     //   _/ // / / / / / / / / / / /_/ / /_/ /_/ / /_/ / /  __/   ___/ / /_/ /_/ / /_/  __(__  )
     //  /___/_/ /_/ /_/_/ /_/ /_/\__,_/\__/\__,_/_.___/_/\___/   /____/\__/\__,_/\__/\___/____/
 
+    /// @notice SPIRIT token
     ISuperToken public immutable SPIRIT;
+
+    /// @notice Reward Controller contract address
     address public immutable REWARD_CONTROLLER;
+
+    /// @notice Child token associated to this staking pool
     ISuperToken public child;
 
-    uint256 public constant MINIMUM_STAKE_AMOUNT = 1e18; // (1 SPIRIT);
+    /// @notice Minimum stake amount (1 CHILD Token)
+    uint256 public constant MINIMUM_STAKE_AMOUNT = 1 e;
+
+    /// @notice Minimum locking period
     uint256 public constant MINIMUM_LOCKING_PERIOD = 1 weeks;
+
+    /// @notice Maximum locking period (3 years)
     uint256 public constant MAXIMUM_LOCKING_PERIOD = 156 weeks;
+
+    /// @notice Reward stream duration
     uint256 public constant STREAM_OUT_DURATION = 1 weeks;
 
+    /// @notice Time range (used for multiplier calculation)
     uint256 public constant TIME_RANGE = MAXIMUM_LOCKING_PERIOD - MINIMUM_LOCKING_PERIOD;
 
+    /// @notice Minimum multiplier
     uint256 public constant MIN_MULTIPLIER = 10_000;
+
+    /// @notice Maximum multiplier
     uint256 public constant MAX_MULTIPLIER = 360_000;
+
+    /// @notice Multiplier range (used for multiplier calculation)
     uint256 public constant MULTIPLIER_RANGE = MAX_MULTIPLIER - MIN_MULTIPLIER;
 
+    /// @notice Downscaler (used for GDA pool units calculation)
     uint256 private constant _DOWNSCALER = 1e18;
+
+    /// @notice Stakeholder amount (250M SPIRIT)
     uint256 private constant _STAKEHOLDER_AMOUNT = 250_000_000 ether;
+
+    /// @notice Stakeholder locking period (1 year)
     uint256 private constant _STAKEHOLDER_LOCKING_PERIOD = 52 weeks;
 
     //     _____ __        __
@@ -50,8 +78,10 @@ contract StakingPool is IStakingPool, Initializable {
     //   ___/ / /_/ /_/ / /_/  __(__  )
     //  /____/\__/\__,_/\__/\___/____/
 
+    /// @notice Staking GDA pool
     ISuperfluidPool public distributionPool;
 
+    /// @notice Staking info mapping
     mapping(address staker => StakingInfo stakingInfo) private _stakingInfo;
 
     //     ______                 __                  __
@@ -60,6 +90,11 @@ contract StakingPool is IStakingPool, Initializable {
     //  / /___/ /_/ / / / (__  ) /_/ /  / /_/ / /__/ /_/ /_/ / /
     //  \____/\____/_/ /_/____/\__/_/   \__,_/\___/\__/\____/_/
 
+    /**
+     * @notice StakingPool contract constructor
+     * @param _spirit SPIRIT token
+     * @param _rewardController Reward Controller contract address
+     */
     constructor(ISuperToken _spirit, address _rewardController) {
         _disableInitializers();
 
@@ -67,6 +102,7 @@ contract StakingPool is IStakingPool, Initializable {
         REWARD_CONTROLLER = _rewardController;
     }
 
+    /// @inheritdoc IStakingPool
     function initialize(ISuperToken _child, address artist, address agent) external initializer {
         child = _child;
 
@@ -91,10 +127,12 @@ contract StakingPool is IStakingPool, Initializable {
     //   / /____>  </ /_/  __/ /  / / / / /_/ / /  / __/ / /_/ / / / / /__/ /_/ / /_/ / / / (__  )
     //  /_____/_/|_|\__/\___/_/  /_/ /_/\__,_/_/  /_/    \__,_/_/ /_/\___/\__/_/\____/_/ /_/____/
 
+    /// @inheritdoc IStakingPool
     function stake(uint256 amount, uint256 lockingPeriod) external {
         _stake(msg.sender, amount, lockingPeriod);
     }
 
+    /// @inheritdoc IStakingPool
     function increaseStake(uint256 amount) external {
         // Check if the amount is valid
         if (amount < MINIMUM_STAKE_AMOUNT) {
@@ -129,6 +167,7 @@ contract StakingPool is IStakingPool, Initializable {
         child.transferFrom(msg.sender, address(this), amount);
     }
 
+    /// @inheritdoc IStakingPool
     function extendLockingPeriod(uint256 newLockingPeriod) external {
         StakingInfo storage userStakingInfo = _stakingInfo[msg.sender];
 
@@ -159,6 +198,7 @@ contract StakingPool is IStakingPool, Initializable {
         distributionPool.increaseMemberUnits(msg.sender, unitsToAdd);
     }
 
+    /// @inheritdoc IStakingPool
     function unstake(uint256 amount) external {
         StakingInfo storage userStakingInfo = _stakingInfo[msg.sender];
 
@@ -197,6 +237,7 @@ contract StakingPool is IStakingPool, Initializable {
         child.transfer(msg.sender, amount);
     }
 
+    /// @inheritdoc IStakingPool
     function refreshDistributionFlow() external onlyRewardController {
         // Calculate the flowrate of the SPIRIT tokens to be distributed
         int96 flowRate = int256(SPIRIT.balanceOf(address(this)) / STREAM_OUT_DURATION).toInt96();
@@ -210,21 +251,21 @@ contract StakingPool is IStakingPool, Initializable {
     //  | |/ / /  __/ |/ |/ /  / __/ / /_/ / / / / /__/ /_/ / /_/ / / / (__  )
     //  |___/_/\___/|__/|__/  /_/    \__,_/_/ /_/\___/\__/_/\____/_/ /_/____/
 
-    /**
-     * @notice Calculate bonus multiplier based on locking period
-     * @dev Linear function: 4 week = 10_000 (1x), 156 weeks (3 years) = 360_000 (36x)
-     * @param lockingPeriod The locking period in seconds
-     * @return multiplier The bonus multiplier in basis points (10_000 = 1x, 360_000 = 36x)
-     */
+    /// @inheritdoc IStakingPool
     function calculateMultiplier(uint256 lockingPeriod) public pure returns (uint256 multiplier) {
         multiplier = MIN_MULTIPLIER + ((lockingPeriod - MINIMUM_LOCKING_PERIOD) * MULTIPLIER_RANGE) / TIME_RANGE;
     }
 
+    /// @inheritdoc IStakingPool
     function getStakingInfo(address staker) external view returns (StakingInfo memory stakingInfo) {
         stakingInfo = _stakingInfo[staker];
     }
 
-    // INTERNAL FUNCTIONS
+    //      ____      __                        __   ______                 __  _
+    //     /  _/___  / /____  _________  ____ _/ /  / ____/_  ______  _____/ /_(_)___  ____  _____
+    //     / // __ \/ __/ _ \/ ___/ __ \/ __ `/ /  / /_  / / / / __ \/ ___/ __/ / __ \/ __ \/ ___/
+    //   _/ // / / / /_/  __/ /  / / / / /_/ / /  / __/ / /_/ / / / / /__/ /_/ / /_/ / / / (__  )
+    //  /___/_/ /_/\__/\___/_/  /_/ /_/\__,_/_/  /_/    \__,_/_/ /_/\___/\__/_/\____/_/ /_/____/
 
     function _stake(address staker, uint256 amount, uint256 lockingPeriod) internal {
         StakingInfo storage userStakingInfo = _stakingInfo[staker];
