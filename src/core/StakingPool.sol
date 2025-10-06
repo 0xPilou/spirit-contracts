@@ -40,7 +40,7 @@ contract StakingPool is IStakingPool, Initializable {
     ISuperToken public child;
 
     /// @notice Minimum stake amount (1 CHILD Token)
-    uint256 public constant MINIMUM_STAKE_AMOUNT = 1 e;
+    uint256 public constant MINIMUM_STAKE_AMOUNT = 1 ether;
 
     /// @notice Minimum locking period
     uint256 public constant MINIMUM_LOCKING_PERIOD = 1 weeks;
