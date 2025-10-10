@@ -8,6 +8,11 @@
         "internalType": "address"
       },
       {
+        "name": "_spirit",
+        "type": "address",
+        "internalType": "contract ISuperToken"
+      },
+      {
         "name": "_rewardController",
         "type": "address",
         "internalType": "contract IRewardController"
@@ -16,9 +21,37 @@
         "name": "_superTokenFactory",
         "type": "address",
         "internalType": "contract ISuperTokenFactory"
+      },
+      {
+        "name": "_positionManager",
+        "type": "address",
+        "internalType": "contract IPositionManager"
+      },
+      {
+        "name": "_poolManager",
+        "type": "address",
+        "internalType": "contract IPoolManager"
+      },
+      {
+        "name": "_permit2",
+        "type": "address",
+        "internalType": "contract IPermit2"
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "CHILD_TOTAL_SUPPLY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -35,13 +68,39 @@
   },
   {
     "type": "function",
-    "name": "DEFAULT_SUPPLY",
+    "name": "DEFAULT_LIQUIDITY_SUPPLY",
     "inputs": [],
     "outputs": [
       {
         "name": "",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "DEFAULT_POOL_FEE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint24",
+        "internalType": "uint24"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "DEFAULT_TICK_SPACING",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int24",
+        "internalType": "int24"
       }
     ],
     "stateMutability": "view"
@@ -74,6 +133,45 @@
   },
   {
     "type": "function",
+    "name": "PERMIT2",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IPermit2"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "POOL_MANAGER",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IPoolManager"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "POSITION_MANAGER",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IPositionManager"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "REWARD_CONTROLLER",
     "inputs": [],
     "outputs": [
@@ -94,6 +192,19 @@
         "name": "",
         "type": "address",
         "internalType": "contract ISuperToken"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SQRT_PRICE_1_1",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint160",
+        "internalType": "uint160"
       }
     ],
     "stateMutability": "view"
@@ -147,6 +258,50 @@
         "name": "agent",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "child",
+        "type": "address",
+        "internalType": "contract ISuperToken"
+      },
+      {
+        "name": "stakingPool",
+        "type": "address",
+        "internalType": "contract IStakingPool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "createChild",
+    "inputs": [
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "symbol",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "artist",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "specialAllocation",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -462,6 +617,11 @@
   {
     "type": "error",
     "name": "FailedInnerCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "INVALID_SPECIAL_ALLOCATION",
     "inputs": []
   },
   {
