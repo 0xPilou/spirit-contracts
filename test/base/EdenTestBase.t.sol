@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import "forge-std/Test.sol";
 
+import { VestingSchedulerV3 } from "@superfluid-finance/automation-contracts/scheduler/contracts/VestingSchedulerV3.sol";
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import { ERC1820RegistryCompiled } from
     "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
@@ -44,6 +45,7 @@ contract EdenTestBase is UniswapDeployer {
         _deployer = new SuperfluidFrameworkDeployer();
         _deployer.deployTestFramework();
         _sf = _deployer.getFramework();
+
         // Superfluid Protocol Deployment End
 
         UniswapDeployer.setUp();
@@ -57,6 +59,7 @@ contract EdenTestBase is UniswapDeployer {
         config.positionManager = address(positionManager);
         config.poolManager = address(manager);
         config.permit2 = address(permit2);
+        config.vestingScheduler = address(new VestingSchedulerV3(_sf.host));
 
         // Deploy the contracts under test
         vm.startPrank(DEPLOYER);
