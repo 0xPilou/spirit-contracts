@@ -116,10 +116,10 @@ library EdenDeployer {
             IVestingSchedulerV3(config.vestingScheduler),
             ISuperToken(results.spirit),
             config.treasury,
-            uint32(block.timestamp + 5200 weeks),
+            uint32(block.timestamp + 1000 weeks),
             1,
             1,
-            uint32(block.timestamp + 10_400 weeks)
+            uint32(block.timestamp + 2000 weeks)
         );
 
         results.spiritVestingFactory = address(vestingFactory);
