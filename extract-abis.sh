@@ -13,7 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Create organized output directories
-mkdir -p abis/{core,factory,interfaces,token}
+mkdir -p abis/{core,factory,interfaces,token,vesting}
 
 echo "Extracting and organizing ABIs..."
 
@@ -34,6 +34,12 @@ TOKEN_CONTRACTS=(
     "ChildSuperToken"
 )
 
+# Vesting contracts
+VESTING_CONTRACTS=(
+    "SpiritVesting"
+    "SpiritVestingFactory"
+)
+
 # Interface contracts
 INTERFACE_CONTRACTS=(
     "IRewardController"
@@ -41,6 +47,7 @@ INTERFACE_CONTRACTS=(
     "IEdenFactory"
     "ISpiritToken"
     "IChildSuperToken"
+    "ISpiritVestingFactory"
 )
 
 # Function to extract ABI
@@ -75,6 +82,12 @@ for contract in "${TOKEN_CONTRACTS[@]}"; do
     extract_abi "$contract" "token" "token"
 done
 
+# Extract vesting contracts
+echo "=== Vesting Contracts ==="
+for contract in "${VESTING_CONTRACTS[@]}"; do
+    extract_abi "$contract" "vesting" "vesting"
+done
+
 # Extract interface contracts
 echo "=== Interface Contracts ==="
 for contract in "${INTERFACE_CONTRACTS[@]}"; do
@@ -88,12 +101,13 @@ echo "abis/"
 echo "├── core/           # Core protocol contracts (RewardController, StakingPool)"
 echo "├── factory/        # Factory contracts (EdenFactory)"
 echo "├── interfaces/     # Contract interfaces"
-echo "└── token/          # Token implementations (SpiritToken, ChildSuperToken)"
+echo "├── token/          # Token implementations (SpiritToken, ChildSuperToken)"
+echo "└── vesting/        # Vesting contracts (SpiritVesting, SpiritVestingFactory)"
 echo ""
 
 # Show summary
 echo "Summary:"
-for category in core factory interfaces token; do
+for category in core factory interfaces token vesting; do
     count=$(find "abis/$category" -name "*.json" 2>/dev/null | wc -l)
     echo "  $category/: $count ABIs"
 done
