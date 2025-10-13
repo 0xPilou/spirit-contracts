@@ -53,7 +53,7 @@ library NetworkConfig {
             spiritTokenSymbol: "SPIRIT",
             spiritTokenSupply: 1_000_000_000 ether,
             spiritTokenLiquiditySupply: 250_000_000 ether,
-            spiritInitialTick: 184_216,
+            spiritInitialTick: 184_200,
             spiritPoolFee: 10_000,
             spiritTickSpacing: 200
         });
@@ -80,7 +80,7 @@ library NetworkConfig {
             spiritTokenSymbol: "SECRETv3",
             spiritTokenSupply: 1_000_000_000 ether,
             spiritTokenLiquiditySupply: 250_000_000 ether,
-            spiritInitialTick: 184_216,
+            spiritInitialTick: 184_200,
             spiritPoolFee: 10_000,
             spiritTickSpacing: 200
         });
@@ -103,7 +103,7 @@ library NetworkConfig {
             spiritTokenSymbol: "SECRETv3",
             spiritTokenSupply: 1_000_000_000 ether,
             spiritTokenLiquiditySupply: 250_000_000 ether,
-            spiritInitialTick: 184_216,
+            spiritInitialTick: 184_200,
             spiritPoolFee: 10_000,
             spiritTickSpacing: 200
         });
