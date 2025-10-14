@@ -7,7 +7,7 @@
 | Contract               | Contract Address                                                                                                                |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | EDEN Multisig          | [`0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A`](https://sepolia.etherscan.io/address/0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A) |
-| SPIRIT Token           | [`0xC280291AD69712e3dbD39965A90BAff1683D2De5`](https://sepolia.etherscan.io/address/0x073C97Ca5Ed16f2097A44A206193a97c0aE327A4) |
+| SPIRIT Token           | [`0xC280291AD69712e3dbD39965A90BAff1683D2De5`](https://sepolia.etherscan.io/address/0xC280291AD69712e3dbD39965A90BAff1683D2De5) |
 | Reward Controller      | [`0xdd27Ce16F1B59818c6A4C428F8BDD5d3BA652539`](https://sepolia.etherscan.io/address/0xbb44C68248fB1E108B8aaaBfA02AdE1a387c50fC) |
 | Staking Pool (Beacon)  | [`0xF66A9999ea07825232CeEa4F75711715934333D1`](https://sepolia.etherscan.io/address/0x5a0AE4D855Fb94709032a86c0af3a42cEC855fA2) |
 | Eden Factory           | [`0x28F0BC53b52208c8286A4C663680C2eD99d18982`](https://sepolia.etherscan.io/address/0x64B6A29edC6cacF9568332E302D293A562c2fb8F) |
