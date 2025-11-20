@@ -74,4 +74,10 @@ interface ISpiritVestingFactory {
      */
     function balanceOf(address vestingReceiver) external view returns (uint256 unvestedBalance);
 
+    /**
+     * @notice Gets the treasury address
+     * @return treasury The current treasury address
+     */
+    function treasury() external view returns (address treasury);
+
 }

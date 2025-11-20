@@ -8,13 +8,23 @@ import { IVestingSchedulerV3 } from
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
+/* Local Imports */
+
+import { ISpiritVesting } from "src/interfaces/vesting/ISpiritVesting.sol";
+import { ISpiritVestingFactory } from "src/interfaces/vesting/ISpiritVestingFactory.sol";
+
 using SuperTokenV1Library for ISuperToken;
 
 /**
  * @title SPIRIT Token Vesting Contract
  * @notice Contract holding unvested SPIRIT tokens and acting as sender for the vesting scheduler
  */
-contract SpiritVesting {
+contract SpiritVesting is ISpiritVesting {
+
+    ISuperToken public immutable SPIRIT;
+    address public immutable RECIPIENT;
+    IVestingSchedulerV3 public immutable VESTING_SCHEDULER;
+    ISpiritVestingFactory public immutable FACTORY;
 
     //     ______                 __                  __
     //    / ____/___  ____  _____/ /________  _______/ /_____  _____
@@ -56,6 +66,52 @@ contract SpiritVesting {
             endDate,
             0 /* claimValidityDate */
         );
+
+        SPIRIT = spirit;
+        RECIPIENT = recipient;
+        VESTING_SCHEDULER = vestingScheduler;
+        FACTORY = ISpiritVestingFactory(msg.sender);
+    }
+
+    //      ______     __                        __   ______                 __  _
+    //     / ____/  __/ /____  _________  ____ _/ /  / ____/_  ______  _____/ /_(_)___  ____  _____
+    //    / __/ | |/_/ __/ _ \/ ___/ __ \/ __ `/ /  / /_  / / / / __ \/ ___/ __/ / __ \/ __ \/ ___/
+    //   / /____>  </ /_/  __/ /  / / / / /_/ / /  / __/ / /_/ / / / / /__/ /_/ / /_/ / / / (__  )
+    //  /_____/_/|_|\__/\___/_/  /_/ /_/\__,_/_/  /_/    \__,_/_/ /_/\___/\__/_/\____/_/ /_/____/
+
+    /// @inheritdoc ISpiritVesting
+    function cancelVesting() external onlyAdmin {
+        // Close the flow between this contract and the recipient
+        SPIRIT.flow(RECIPIENT, 0);
+
+        IVestingSchedulerV3.VestingSchedule memory vs =
+            VESTING_SCHEDULER.getVestingSchedule(address(SPIRIT), address(this), RECIPIENT);
+        if (vs.endDate != 0) {
+            // Delete the vesting schedule if it is not already deleted
+            VESTING_SCHEDULER.deleteVestingSchedule(SPIRIT, RECIPIENT);
+        }
+        // Fetch the remaining balance of the vesting contract
+        uint256 remainingBalance = SPIRIT.balanceOf(address(this));
+
+        // Transfer the remaining SUP tokens to the treasury
+        SPIRIT.transfer(FACTORY.treasury(), remainingBalance);
+
+        // Emit the `VestingDeleted` event
+        emit VestingDeleted(remainingBalance);
+    }
+
+    //      __  ___          ___ _____
+    //     /  |/  /___  ____/ (_) __(_)__  __________
+    //    / /|_/ / __ \/ __  / / /_/ / _ \/ ___/ ___/
+    //   / /  / / /_/ / /_/ / / __/ /  __/ /  (__  )
+    //  /_/  /_/\____/\__,_/_/_/ /_/\___/_/  /____/
+
+    /**
+     * @notice Modifier to restrict access to admin only
+     */
+    modifier onlyAdmin() {
+        if (msg.sender != FACTORY.treasury()) revert FORBIDDEN();
+        _;
     }
 
 }
