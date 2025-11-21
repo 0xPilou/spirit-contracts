@@ -17,6 +17,7 @@ import { NetworkConfig } from "script/config/NetworkConfig.sol";
 
 import { RewardController } from "src/core/RewardController.sol";
 import { EdenFactory } from "src/factory/EdenFactory.sol";
+import { AirstreamFactoryMock } from "test/mocks/AirstreamFactoryMock.sol";
 import { UniswapDeployer } from "test/utils/UniswapDeployer.sol";
 
 contract EdenTestBase is UniswapDeployer {
@@ -31,6 +32,7 @@ contract EdenTestBase is UniswapDeployer {
 
     SuperfluidFrameworkDeployer internal _deployer;
     SuperfluidFrameworkDeployer.Framework internal _sf;
+    AirstreamFactoryMock internal _airstreamFactory;
 
     address internal immutable DEPLOYER = makeAddr("DEPLOYER");
     address internal immutable TREASURY = makeAddr("TREASURY");
@@ -45,11 +47,15 @@ contract EdenTestBase is UniswapDeployer {
         _deployer = new SuperfluidFrameworkDeployer();
         _deployer.deployTestFramework();
         _sf = _deployer.getFramework();
-
         // Superfluid Protocol Deployment End
 
+        // Deploy Uniswap Contracts
         UniswapDeployer.setUp();
 
+        // Deploy Airstream Factory Mock
+        _airstreamFactory = new AirstreamFactoryMock();
+
+        // Deploy Eden Contracts
         NetworkConfig.EdenDeploymentConfig memory config = NetworkConfig.getLocalConfig();
 
         config.admin = ADMIN;
@@ -59,6 +65,7 @@ contract EdenTestBase is UniswapDeployer {
         config.positionManager = address(positionManager);
         config.poolManager = address(manager);
         config.permit2 = address(permit2);
+        config.airstreamFactory = address(_airstreamFactory);
         config.vestingScheduler = address(new VestingSchedulerV3(_sf.host));
 
         // Deploy the contracts under test
