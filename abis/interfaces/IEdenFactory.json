@@ -22,6 +22,21 @@
         "name": "agent",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "specialAllocation",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "merkleRoot",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "initialSqrtPriceX96",
+        "type": "uint160",
+        "internalType": "uint160"
       }
     ],
     "outputs": [
@@ -63,9 +78,14 @@
         "internalType": "address"
       },
       {
-        "name": "specialAllocation",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "merkleRoot",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "initialSqrtPriceX96",
+        "type": "uint160",
+        "internalType": "uint160"
       }
     ],
     "outputs": [

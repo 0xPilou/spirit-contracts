@@ -36,9 +36,53 @@
         "name": "_permit2",
         "type": "address",
         "internalType": "contract IPermit2"
+      },
+      {
+        "name": "_airstreamFactory",
+        "type": "address",
+        "internalType": "contract IAirstreamFactory"
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "AIRSTREAM_DURATION",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "AIRSTREAM_FACTORY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IAirstreamFactory"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "AIRSTREAM_SUPPLY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint96",
+        "internalType": "uint96"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -198,19 +242,6 @@
   },
   {
     "type": "function",
-    "name": "SQRT_PRICE_1_1",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint160",
-        "internalType": "uint160"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "STAKING_POOL_BEACON",
     "inputs": [],
     "outputs": [
@@ -258,6 +289,21 @@
         "name": "agent",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "specialAllocation",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "merkleRoot",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "initialSqrtPriceX96",
+        "type": "uint160",
+        "internalType": "uint160"
       }
     ],
     "outputs": [
@@ -299,9 +345,14 @@
         "internalType": "address"
       },
       {
-        "name": "specialAllocation",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "merkleRoot",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "initialSqrtPriceX96",
+        "type": "uint160",
+        "internalType": "uint160"
       }
     ],
     "outputs": [
