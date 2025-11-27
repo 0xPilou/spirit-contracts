@@ -19,6 +19,7 @@ interface ISpiritFactory {
     //   / /___ | |/ /  __/ / / / /_(__  )
     //  /_____/ |___/\___/_/ /_/\__/____/
 
+    /// @notice Event emitted when a child token is created
     event ChildTokenCreated(
         address indexed child, address indexed stakingPool, address artist, address agent, bytes32 merkleRoot
     );
