@@ -17,6 +17,8 @@ import { NetworkConfig } from "script/config/NetworkConfig.sol";
 
 import { RewardController } from "src/core/RewardController.sol";
 import { SpiritFactory } from "src/factory/SpiritFactory.sol";
+
+import { SpiritVestingFactory } from "src/vesting/SpiritVestingFactory.sol";
 import { AirstreamFactoryMock } from "test/mocks/AirstreamFactoryMock.sol";
 import { UniswapDeployer } from "test/utils/UniswapDeployer.sol";
 
@@ -27,6 +29,7 @@ contract SpiritTestBase is UniswapDeployer {
     // Contracts under test
     SpiritFactory internal _spiritFactory;
     RewardController internal _rewardController;
+    SpiritVestingFactory internal _spiritVestingFactory;
 
     ISuperToken internal _spirit;
 
@@ -78,6 +81,7 @@ contract SpiritTestBase is UniswapDeployer {
 
         _spiritFactory = SpiritFactory(result.spiritFactoryProxy);
         _rewardController = RewardController(result.rewardControllerProxy);
+        _spiritVestingFactory = SpiritVestingFactory(result.spiritVestingFactory);
         _spirit = ISuperToken(result.spirit);
     }
 
