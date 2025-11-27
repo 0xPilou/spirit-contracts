@@ -25,7 +25,7 @@ CORE_CONTRACTS=(
 
 # Factory contracts
 FACTORY_CONTRACTS=(
-    "EdenFactory"
+    "SpiritFactory"
 )
 
 # Token contracts
@@ -44,7 +44,7 @@ VESTING_CONTRACTS=(
 INTERFACE_CONTRACTS=(
     "IRewardController"
     "IStakingPool"
-    "IEdenFactory"
+    "ISpiritFactory"
     "ISpiritToken"
     "IChildSuperToken"
     "ISpiritVestingFactory"
@@ -99,7 +99,7 @@ echo "ABI extraction complete! Organized structure:"
 echo ""
 echo "abis/"
 echo "├── core/           # Core protocol contracts (RewardController, StakingPool)"
-echo "├── factory/        # Factory contracts (EdenFactory)"
+echo "├── factory/        # Factory contracts (SpiritFactory)"
 echo "├── interfaces/     # Contract interfaces"
 echo "├── token/          # Token implementations (SpiritToken, ChildSuperToken)"
 echo "└── vesting/        # Vesting contracts (SpiritVesting, SpiritVestingFactory)"

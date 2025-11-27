@@ -2,14 +2,14 @@
 pragma solidity ^0.8.26;
 
 /* Local imports */
-import { EdenDeployer } from "script/EdenDeployer.sol";
+import { SpiritDeployer } from "script/SpiritDeployer.sol";
 import { NetworkConfig } from "script/config/NetworkConfig.sol";
 
 /* Foundry imports */
 import { Script } from "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
 
-contract DeployEden is Script {
+contract DeploySpirit is Script {
 
     function _startBroadcast() internal returns (address deployer) {
         vm.startBroadcast();
@@ -25,7 +25,7 @@ contract DeployEden is Script {
         uint256 chainId = block.chainid;
 
         // Get Base mainnet configuration
-        NetworkConfig.EdenDeploymentConfig memory config = NetworkConfig.getNetworkConfig(chainId);
+        NetworkConfig.SpiritDeploymentConfig memory config = NetworkConfig.getNetworkConfig(chainId);
 
         console.log("");
         console.log("===> DEPLOYMENT CONFIGURATION");
@@ -46,13 +46,13 @@ contract DeployEden is Script {
         // Start broadcasting transactions
         address deployer = _startBroadcast();
         console.log("");
-        console.log("===> DEPLOYING EDEN PROTOCOL");
+        console.log("===> DEPLOYING SPIRIT PROTOCOL");
         console.log(" --- Chain ID          :   ", chainId);
         console.log(" --- Deployer address  :   ", deployer);
         console.log(" --- Deployer balance  :   ", deployer.balance / 1e18, "ETH");
 
-        // Deploy Eden Protocol
-        EdenDeployer.EdenDeploymentResult memory result = EdenDeployer.deployAll(config, deployer);
+        // Deploy Spirit Protocol
+        SpiritDeployer.SpiritDeploymentResult memory result = SpiritDeployer.deployAll(config, deployer);
 
         _stopBroadcast();
 
@@ -61,7 +61,7 @@ contract DeployEden is Script {
         console.log(" --- Spirit Token              :", result.spirit);
         console.log(" --- Reward Controller         :", result.rewardControllerProxy);
         console.log(" --- Staking Pool              :", result.stakingPoolBeacon);
-        console.log(" --- Eden Factory              :", result.edenFactoryProxy);
+        console.log(" --- Spirit Factory              :", result.spiritFactoryProxy);
         console.log(" --- Spirit Vesting Factory    :", result.spiritVestingFactory);
         console.log("");
     }

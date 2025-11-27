@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 library NetworkConfig {
 
-    struct EdenDeploymentConfig {
+    struct SpiritDeploymentConfig {
         // Role Settings
         address admin;
         address treasury;
@@ -25,7 +25,7 @@ library NetworkConfig {
         int24 spiritTickSpacing;
     }
 
-    function getNetworkConfig(uint256 chainId) internal pure returns (EdenDeploymentConfig memory config) {
+    function getNetworkConfig(uint256 chainId) internal pure returns (SpiritDeploymentConfig memory config) {
         if (chainId == 8453) {
             config = getBaseMainnetConfig();
         } else if (chainId == 84_532) {
@@ -40,8 +40,8 @@ library NetworkConfig {
     /**
      * @dev Get Base Mainnet configuration
      */
-    function getBaseMainnetConfig() internal pure returns (EdenDeploymentConfig memory) {
-        return EdenDeploymentConfig({
+    function getBaseMainnetConfig() internal pure returns (SpiritDeploymentConfig memory) {
+        return SpiritDeploymentConfig({
             admin: address(0),
             treasury: address(0),
             distributor: address(0),
@@ -61,15 +61,15 @@ library NetworkConfig {
         });
     }
 
-    function getLocalConfig() internal pure returns (EdenDeploymentConfig memory) {
+    function getLocalConfig() internal pure returns (SpiritDeploymentConfig memory) {
         return getBaseMainnetConfig();
     }
 
     /**
      * @dev Get Base Sepolia configuration
      */
-    function getBaseSepoliaConfig() internal pure returns (EdenDeploymentConfig memory) {
-        return EdenDeploymentConfig({
+    function getBaseSepoliaConfig() internal pure returns (SpiritDeploymentConfig memory) {
+        return SpiritDeploymentConfig({
             admin: 0x5D6D8518A1d564c85ea5c41d1dc0deca70F2301C,
             treasury: 0x5D6D8518A1d564c85ea5c41d1dc0deca70F2301C,
             distributor: 0x5D6D8518A1d564c85ea5c41d1dc0deca70F2301C,
@@ -92,8 +92,8 @@ library NetworkConfig {
     /**
      * @dev Get Ethereum Sepolia configuration
      */
-    function getEthereumSepoliaConfig() internal pure returns (EdenDeploymentConfig memory) {
-        return EdenDeploymentConfig({
+    function getEthereumSepoliaConfig() internal pure returns (SpiritDeploymentConfig memory) {
+        return SpiritDeploymentConfig({
             admin: 0x5D6D8518A1d564c85ea5c41d1dc0deca70F2301C,
             treasury: 0x5D6D8518A1d564c85ea5c41d1dc0deca70F2301C,
             distributor: 0x5D6D8518A1d564c85ea5c41d1dc0deca70F2301C,

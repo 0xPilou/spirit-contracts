@@ -12,20 +12,20 @@ import { SuperfluidFrameworkDeployer } from
     "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.t.sol";
 
 /* Local Imports */
-import { EdenDeployer } from "script/EdenDeployer.sol";
+import { SpiritDeployer } from "script/SpiritDeployer.sol";
 import { NetworkConfig } from "script/config/NetworkConfig.sol";
 
 import { RewardController } from "src/core/RewardController.sol";
-import { EdenFactory } from "src/factory/EdenFactory.sol";
+import { SpiritFactory } from "src/factory/SpiritFactory.sol";
 import { AirstreamFactoryMock } from "test/mocks/AirstreamFactoryMock.sol";
 import { UniswapDeployer } from "test/utils/UniswapDeployer.sol";
 
-contract EdenTestBase is UniswapDeployer {
+contract SpiritTestBase is UniswapDeployer {
 
     using SuperTokenV1Library for ISuperToken;
 
     // Contracts under test
-    EdenFactory internal _edenFactory;
+    SpiritFactory internal _spiritFactory;
     RewardController internal _rewardController;
 
     ISuperToken internal _spirit;
@@ -58,8 +58,8 @@ contract EdenTestBase is UniswapDeployer {
         // Deploy Airstream Factory Mock
         _airstreamFactory = new AirstreamFactoryMock();
 
-        // Deploy Eden Contracts
-        NetworkConfig.EdenDeploymentConfig memory config = NetworkConfig.getLocalConfig();
+        // Deploy Spirit Contracts
+        NetworkConfig.SpiritDeploymentConfig memory config = NetworkConfig.getLocalConfig();
 
         config.admin = ADMIN;
         config.distributor = ADMIN;
@@ -73,10 +73,10 @@ contract EdenTestBase is UniswapDeployer {
 
         // Deploy the contracts under test
         vm.startPrank(DEPLOYER);
-        EdenDeployer.EdenDeploymentResult memory result = EdenDeployer.deployAll(config, DEPLOYER);
+        SpiritDeployer.SpiritDeploymentResult memory result = SpiritDeployer.deployAll(config, DEPLOYER);
         vm.stopPrank();
 
-        _edenFactory = EdenFactory(result.edenFactoryProxy);
+        _spiritFactory = SpiritFactory(result.spiritFactoryProxy);
         _rewardController = RewardController(result.rewardControllerProxy);
         _spirit = ISuperToken(result.spirit);
     }

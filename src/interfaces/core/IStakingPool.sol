@@ -5,6 +5,24 @@ import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contract
 
 interface IStakingPool {
 
+    //      ______                 __
+    //     / ____/   _____  ____  / /______
+    //    / __/ | | / / _ \/ __ \/ __/ ___/
+    //   / /___ | |/ /  __/ / / / /_(__  )
+    //  /_____/ |___/\___/_/ /_/\__/____/
+
+    /// @notice Event emitted when a user stakes tokens
+    event Staked(address indexed staker, uint256 amount, uint256 lockingPeriod);
+
+    /// @notice Event emitted when a user increases their stake
+    event IncreasedStake(address indexed staker, uint256 amount);
+
+    /// @notice Event emitted when a user extends their locking period
+    event ExtendedLockingPeriod(address indexed staker, uint256 lockEndDate);
+
+    /// @notice Event emitted when a user unstakes tokens
+    event Unstaked(address indexed staker, uint256 unstakedAmount);
+
     //      ____        __        __
     //     / __ \____ _/ /_____ _/ /___  ______  ___  _____
     //    / / / / __ `/ __/ __ `/ __/ / / / __ \/ _ \/ ___/
@@ -12,6 +30,11 @@ interface IStakingPool {
     //  /_____/\__,_/\__/\__,_/\__/\__, / .___/\___/____/
     //                            /____/_/
 
+    /**
+     * @notice Staking info struct
+     * @param stakedAmount The amount of tokens staked
+     * @param lockedUntil The timestamp until which the tokens are locked
+     */
     struct StakingInfo {
         uint256 stakedAmount;
         uint256 lockedUntil;
@@ -23,13 +46,28 @@ interface IStakingPool {
     //  / /___/ /_/ (__  ) /_/ /_/ / / / / / /  / /___/ /  / /  / /_/ / /  (__  )
     //  \____/\__,_/____/\__/\____/_/ /_/ /_/  /_____/_/  /_/   \____/_/  /____/
 
+    /// @notice Thrown when the provided locking period is invalid.
     error INVALID_LOCKING_PERIOD();
+
+    /// @notice Thrown when the caller has not staked any tokens yet.
     error NOT_STAKED_YET();
+
+    /// @notice Thrown when the caller has already staked tokens.
     error ALREADY_STAKED();
+
+    /// @notice Thrown when the lock period has not expired yet.
     error LOCK_NOT_EXPIRED();
+
+    /// @notice Thrown when the provided stake amount is invalid.
     error INVALID_STAKE_AMOUNT();
+
+    /// @notice Thrown when the caller is not the reward controller.
     error NOT_REWARD_CONTROLLER();
+
+    /// @notice Thrown when the staked amount is insufficient for the requested operation.
     error INSUFFICIENT_STAKED_AMOUNT();
+
+    /// @notice Thrown when attempting to withdraw tokens that are still locked.
     error TOKENS_STILL_LOCKED();
 
     //      ______     __                        __   ______                 __  _

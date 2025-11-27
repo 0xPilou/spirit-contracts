@@ -30,7 +30,7 @@ import { LiquidityAmounts } from "@uniswap/v4-periphery/src/libraries/LiquidityA
 import { NetworkConfig } from "script/config/NetworkConfig.sol";
 import { RewardController } from "src/core/RewardController.sol";
 import { StakingPool } from "src/core/StakingPool.sol";
-import { EdenFactory } from "src/factory/EdenFactory.sol";
+import { SpiritFactory } from "src/factory/SpiritFactory.sol";
 import { IRewardController } from "src/interfaces/core/IRewardController.sol";
 import { IAirstreamFactory } from "src/interfaces/external/IAirstreamFactory.sol";
 import { ISpiritToken } from "src/interfaces/token/ISpiritToken.sol";
@@ -38,23 +38,23 @@ import { SpiritToken } from "src/token/SpiritToken.sol";
 import { SpiritVesting } from "src/vesting/SpiritVesting.sol";
 import { SpiritVestingFactory } from "src/vesting/SpiritVestingFactory.sol";
 
-library EdenDeployer {
+library SpiritDeployer {
 
-    struct EdenDeploymentResult {
+    struct SpiritDeploymentResult {
         address spirit;
         address rewardControllerLogic;
         address rewardControllerProxy;
         address stakingPoolLogic;
         address stakingPoolBeacon;
-        address edenFactoryLogic;
-        address edenFactoryProxy;
+        address spiritFactoryLogic;
+        address spiritFactoryProxy;
         address spiritVestingFactory;
         PoolKey spiritEthPoolKey;
     }
 
-    function deployAll(NetworkConfig.EdenDeploymentConfig memory config, address deployer)
+    function deployAll(NetworkConfig.SpiritDeploymentConfig memory config, address deployer)
         internal
-        returns (EdenDeploymentResult memory results)
+        returns (SpiritDeploymentResult memory results)
     {
         // Contracts Deployment
 
@@ -71,7 +71,7 @@ library EdenDeployer {
         _deployLiquidity(config, results);
 
         /// FIXME: Create Vesting For Team (?)
-        /// FIXME: Create Vesting For Eden Ops (?)
+        /// FIXME: Create Vesting For Ops (?)
 
         // Transfer the SPIRIT Tokens to the Treasury
         ISuperToken(results.spirit).transfer(config.treasury, ISuperToken(results.spirit).balanceOf(deployer));
@@ -81,13 +81,13 @@ library EdenDeployer {
 
         // Contracts Configuration
         RewardController rc = RewardController(results.rewardControllerProxy);
-        rc.grantRole(rc.FACTORY_ROLE(), address(results.edenFactoryProxy));
+        rc.grantRole(rc.FACTORY_ROLE(), address(results.spiritFactoryProxy));
         rc.revokeRole(rc.DEFAULT_ADMIN_ROLE(), deployer);
     }
 
-    function _deploySpiritToken(NetworkConfig.EdenDeploymentConfig memory config, address deployer)
+    function _deploySpiritToken(NetworkConfig.SpiritDeploymentConfig memory config, address deployer)
         internal
-        returns (EdenDeploymentResult memory results)
+        returns (SpiritDeploymentResult memory results)
     {
         results.spirit = address(new SpiritToken());
 
@@ -102,9 +102,9 @@ library EdenDeployer {
     }
 
     function _deployVestingFactory(
-        NetworkConfig.EdenDeploymentConfig memory config,
-        EdenDeploymentResult memory results
-    ) internal returns (EdenDeploymentResult memory) {
+        NetworkConfig.SpiritDeploymentConfig memory config,
+        SpiritDeploymentResult memory results
+    ) internal returns (SpiritDeploymentResult memory) {
         // Deploy the Spirit Vesting Factory Contract
         SpiritVestingFactory vestingFactory = new SpiritVestingFactory(
             IVestingSchedulerV3(config.vestingScheduler), ISuperToken(results.spirit), config.treasury
@@ -127,9 +127,9 @@ library EdenDeployer {
     }
 
     function _deployInfrastructure(
-        NetworkConfig.EdenDeploymentConfig memory config,
-        EdenDeploymentResult memory results
-    ) internal returns (EdenDeploymentResult memory) {
+        NetworkConfig.SpiritDeploymentConfig memory config,
+        SpiritDeploymentResult memory results
+    ) internal returns (SpiritDeploymentResult memory) {
         // Deploy the Reward Controller contract
         RewardController rewardControllerLogic = new RewardController(ISuperToken(results.spirit));
         ERC1967Proxy rewardControllerProxy = new ERC1967Proxy(
@@ -141,8 +141,8 @@ library EdenDeployer {
             address(new StakingPool(ISuperToken(results.spirit), address(rewardControllerProxy)));
         UpgradeableBeacon stakingPoolBeacon = new UpgradeableBeacon(stakingPoolLogicAddress, config.admin);
 
-        // Deploy the Eden Factory contract
-        EdenFactory edenFactoryLogic = new EdenFactory(
+        // Deploy the Spirit Factory contract
+        SpiritFactory spiritFactoryLogic = new SpiritFactory(
             address(stakingPoolBeacon),
             ISuperToken(results.spirit),
             IRewardController(address(rewardControllerProxy)),
@@ -152,25 +152,25 @@ library EdenDeployer {
             IPermit2(config.permit2),
             IAirstreamFactory(config.airstreamFactory)
         );
-        ERC1967Proxy edenFactoryProxy = new ERC1967Proxy(
-            address(edenFactoryLogic), abi.encodeWithSelector(EdenFactory.initialize.selector, config.admin)
+        ERC1967Proxy spiritFactoryProxy = new ERC1967Proxy(
+            address(spiritFactoryLogic), abi.encodeWithSelector(SpiritFactory.initialize.selector, config.admin)
         );
 
         results.rewardControllerLogic = address(rewardControllerLogic);
         results.rewardControllerProxy = address(rewardControllerProxy);
         results.stakingPoolBeacon = address(stakingPoolBeacon);
         results.stakingPoolLogic = address(stakingPoolLogicAddress);
-        results.edenFactoryLogic = address(edenFactoryLogic);
-        results.edenFactoryProxy = address(edenFactoryProxy);
+        results.spiritFactoryLogic = address(spiritFactoryLogic);
+        results.spiritFactoryProxy = address(spiritFactoryProxy);
 
         return results;
     }
 
     /// LIQUIDITY SETUP FUNCTIONS
-    function _setupUniswapPool(NetworkConfig.EdenDeploymentConfig memory config, EdenDeploymentResult memory results)
-        internal
-        returns (EdenDeploymentResult memory)
-    {
+    function _setupUniswapPool(
+        NetworkConfig.SpiritDeploymentConfig memory config,
+        SpiritDeploymentResult memory results
+    ) internal returns (SpiritDeploymentResult memory) {
         // Create the pool key
         results.spiritEthPoolKey = PoolKey({
             currency0: CurrencyLibrary.ADDRESS_ZERO,
@@ -188,7 +188,7 @@ library EdenDeployer {
         return results;
     }
 
-    function _deployLiquidity(NetworkConfig.EdenDeploymentConfig memory config, EdenDeploymentResult memory results)
+    function _deployLiquidity(NetworkConfig.SpiritDeploymentConfig memory config, SpiritDeploymentResult memory results)
         internal
     {
         (uint256 amount0, uint256 amount1, uint128 liquidity, int24 tickLower, int24 tickUpper) =
@@ -211,7 +211,7 @@ library EdenDeployer {
     }
 
     function _orderParams(
-        NetworkConfig.EdenDeploymentConfig memory config,
+        NetworkConfig.SpiritDeploymentConfig memory config,
         address spiritToken,
         uint256 spiritTokenAmount,
         PoolKey memory poolKey
@@ -243,7 +243,7 @@ library EdenDeployer {
         );
     }
 
-    function _approvePermit2(NetworkConfig.EdenDeploymentConfig memory config, address spiritToken, uint256 amount)
+    function _approvePermit2(NetworkConfig.SpiritDeploymentConfig memory config, address spiritToken, uint256 amount)
         internal
     {
         // Approve token for spending via Permit2

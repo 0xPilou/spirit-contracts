@@ -8,7 +8,7 @@ The system utilizes interconnected Uniswap liquidity pools to facilitate token s
 # Pieces 
 - SPIRIT superToken (1B)
     12 month cliff + 24 months for team (25%)                           x   
-    6 months eden operations (25%)                                      x   
+    6 months Spirit operations (25%)                                      x   
     liquidity pool (25%) 
         liquidity pool (locked 20% in reasonable ranges)                N
         liquidity pool (unlocked 5% in unreasonable range)              x

@@ -5,10 +5,10 @@ import { IERC721 } from "@openzeppelin-v5/contracts/token/ERC721/IERC721.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 
-import { IEdenFactory } from "src/interfaces/factory/IEdenFactory.sol";
-import { EdenTestBase } from "test/base/EdenTestBase.t.sol";
+import { ISpiritFactory } from "src/interfaces/factory/ISpiritFactory.sol";
+import { SpiritTestBase } from "test/base/SpiritTestBase.t.sol";
 
-contract EdenFactoryTest is EdenTestBase {
+contract SpiritFactoryTest is SpiritTestBase {
 
     function setUp() public override {
         super.setUp();
@@ -16,7 +16,7 @@ contract EdenFactoryTest is EdenTestBase {
 
     function test_initialize() public view {
         assertTrue(
-            _edenFactory.hasRole(_edenFactory.DEFAULT_ADMIN_ROLE(), ADMIN), "ADMIN does not have DEFAULT_ADMIN_ROLE"
+            _spiritFactory.hasRole(_spiritFactory.DEFAULT_ADMIN_ROLE(), ADMIN), "ADMIN does not have DEFAULT_ADMIN_ROLE"
         );
     }
 
@@ -26,11 +26,11 @@ contract EdenFactoryTest is EdenTestBase {
     {
         vm.prank(ADMIN);
         if (specialAllocation == 0) {
-            (newChildToken, newStakingPool) = _edenFactory.createChild(
+            (newChildToken, newStakingPool) = _spiritFactory.createChild(
                 "New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), DEFAULT_SQRT_PRICE_X96
             );
         } else {
-            (newChildToken, newStakingPool) = _edenFactory.createChild(
+            (newChildToken, newStakingPool) = _spiritFactory.createChild(
                 "New Child Token", "NEWCHILD", ARTIST, AGENT, specialAllocation, bytes32(0), DEFAULT_SQRT_PRICE_X96
             );
         }
@@ -48,7 +48,7 @@ contract EdenFactoryTest is EdenTestBase {
         );
 
         // Token Supply Assertions
-        assertEq(newChildToken.totalSupply(), _edenFactory.CHILD_TOTAL_SUPPLY(), "Invalid minted supply");
+        assertEq(newChildToken.totalSupply(), _spiritFactory.CHILD_TOTAL_SUPPLY(), "Invalid minted supply");
         assertEq(newChildToken.balanceOf(ARTIST), 0, "Artist should not have floating CHILD tokens");
         assertEq(newChildToken.balanceOf(AGENT), 0, "Agent should not have floating CHILD tokens");
         assertEq(
@@ -59,13 +59,13 @@ contract EdenFactoryTest is EdenTestBase {
 
         assertEq(
             newChildToken.balanceOf(address(manager)),
-            _edenFactory.DEFAULT_LIQUIDITY_SUPPLY() - specialAllocation,
+            _spiritFactory.DEFAULT_LIQUIDITY_SUPPLY() - specialAllocation,
             "UniswapV4 Pool Manager should have 250M CHILD tokens (Liquidity)"
         );
 
         assertEq(
             newChildToken.balanceOf(address(_airstreamFactory)),
-            _edenFactory.AIRSTREAM_SUPPLY(),
+            _spiritFactory.AIRSTREAM_SUPPLY(),
             "Airstream Recipient should have 250M CHILD tokens (AIRSTREAM share)"
         );
 
@@ -102,26 +102,26 @@ contract EdenFactoryTest is EdenTestBase {
     }
 
     function test_createChild_with_special_allocation(uint256 specialAllocation) public {
-        specialAllocation = bound(specialAllocation, 1, _edenFactory.DEFAULT_LIQUIDITY_SUPPLY() - 1);
+        specialAllocation = bound(specialAllocation, 1, _spiritFactory.DEFAULT_LIQUIDITY_SUPPLY() - 1);
 
         _createChild(specialAllocation);
     }
 
     function test_createChild_invalid_caller(address nonAdmin) public {
-        vm.assume(_edenFactory.hasRole(_edenFactory.DEFAULT_ADMIN_ROLE(), nonAdmin) != true);
+        vm.assume(_spiritFactory.hasRole(_spiritFactory.DEFAULT_ADMIN_ROLE(), nonAdmin) != true);
 
         vm.prank(nonAdmin);
         vm.expectRevert();
-        _edenFactory.createChild("New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), DEFAULT_SQRT_PRICE_X96);
+        _spiritFactory.createChild("New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), DEFAULT_SQRT_PRICE_X96);
     }
 
     function test_createChild_invalid_special_allocation(uint256 specialAllocation) public {
         specialAllocation =
-            bound(specialAllocation, _edenFactory.DEFAULT_LIQUIDITY_SUPPLY(), _edenFactory.CHILD_TOTAL_SUPPLY());
+            bound(specialAllocation, _spiritFactory.DEFAULT_LIQUIDITY_SUPPLY(), _spiritFactory.CHILD_TOTAL_SUPPLY());
 
         vm.prank(ADMIN);
-        vm.expectRevert(IEdenFactory.INVALID_SPECIAL_ALLOCATION.selector);
-        _edenFactory.createChild(
+        vm.expectRevert(ISpiritFactory.INVALID_SPECIAL_ALLOCATION.selector);
+        _spiritFactory.createChild(
             "New Child Token", "NEWCHILD", ARTIST, AGENT, specialAllocation, bytes32(0), DEFAULT_SQRT_PRICE_X96
         );
     }

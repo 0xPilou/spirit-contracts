@@ -19,6 +19,11 @@ import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 using SuperTokenV1Library for ISuperToken;
 using SafeCast for int256;
 
+/**
+ * @title RewardController
+ * @notice RewardController contract
+ * @dev This contract is used to distribute SPIRIT rewards to staking pools
+ */
 contract RewardController is IRewardController, AccessControl, Initializable {
 
     //      ____                          __        __    __        _____ __        __
@@ -27,8 +32,13 @@ contract RewardController is IRewardController, AccessControl, Initializable {
     //   _/ // / / / / / / / / / / /_/ / /_/ /_/ / /_/ / /  __/   ___/ / /_/ /_/ / /_/  __(__  )
     //  /___/_/ /_/ /_/_/ /_/ /_/\__,_/\__/\__,_/_.___/_/\___/   /____/\__/\__,_/\__/\___/____/
 
+    /// @notice Role identifier for the factory contract
     bytes32 public constant FACTORY_ROLE = keccak256("FACTORY_ROLE");
+
+    /// @notice Role identifier for the distributor
     bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
+
+    /// @notice The SPIRIT SuperToken distributed as rewards
     ISuperToken public immutable SPIRIT;
 
     //     _____ __        __
@@ -37,6 +47,7 @@ contract RewardController is IRewardController, AccessControl, Initializable {
     //   ___/ / /_/ /_/ / /_/  __(__  )
     //  /____/\__/\__,_/\__/\___/____/
 
+    /// @notice Mapping of child addresses to their associated staking pool contracts
     mapping(address child => IStakingPool stakingPool) public stakingPools;
 
     //     ______                 __                  __
@@ -45,11 +56,22 @@ contract RewardController is IRewardController, AccessControl, Initializable {
     //  / /___/ /_/ / / / (__  ) /_/ /  / /_/ / /__/ /_/ /_/ / /
     //  \____/\____/_/ /_/____/\__/_/   \__,_/\___/\__/\____/_/
 
+    /**
+     * @notice RewardController contract constructor
+     * @param _spirit The SPIRIT SuperToken distributed as rewards
+     */
     constructor(ISuperToken _spirit) {
+        // Prevent initialization of implementationcontract
         _disableInitializers();
+
+        // Set the SPIRIT SuperToken distributed as rewards
         SPIRIT = _spirit;
     }
 
+    /**
+     * @notice Initializes the RewardController contract
+     * @param admin The address to grant the DEFAULT_ADMIN_ROLE and DISTRIBUTOR_ROLE
+     */
     function initialize(address admin) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -62,6 +84,7 @@ contract RewardController is IRewardController, AccessControl, Initializable {
     //   / /____>  </ /_/  __/ /  / / / / /_/ / /  / __/ / /_/ / / / / /__/ /_/ / /_/ / / / (__  )
     //  /_____/_/|_|\__/\___/_/  /_/ /_/\__,_/_/  /_/    \__,_/_/ /_/\___/\__/_/\____/_/ /_/____/
 
+    /// @inheritdoc IRewardController
     function setStakingPool(address child, IStakingPool stakingPool) external onlyRole(FACTORY_ROLE) {
         // Input validation
         if (child == address(0)) {
@@ -75,6 +98,7 @@ contract RewardController is IRewardController, AccessControl, Initializable {
         stakingPools[child] = stakingPool;
     }
 
+    /// @inheritdoc IRewardController
     function distributeRewards(address child, uint256 amount) external onlyRole(DISTRIBUTOR_ROLE) {
         // Gets the staking pool associated to the child
         IStakingPool stakingPool = stakingPools[child];
@@ -94,6 +118,7 @@ contract RewardController is IRewardController, AccessControl, Initializable {
         stakingPool.refreshDistributionFlow();
     }
 
+    /// @inheritdoc IRewardController
     function upgradeTo(address newImplementation, bytes calldata data) external onlyRole(DEFAULT_ADMIN_ROLE) {
         ERC1967Utils.upgradeToAndCall(newImplementation, data);
     }

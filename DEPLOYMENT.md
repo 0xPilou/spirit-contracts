@@ -6,17 +6,17 @@
 
 | Contract               | Contract Address                                                                                                                |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| EDEN Multisig          | [`0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A`](https://sepolia.etherscan.io/address/0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A) |
+| SPIRIT Multisig        | [`0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A`](https://sepolia.etherscan.io/address/0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A) |
 | SPIRIT Token           | [`0xC280291AD69712e3dbD39965A90BAff1683D2De5`](https://sepolia.etherscan.io/address/0xC280291AD69712e3dbD39965A90BAff1683D2De5) |
 | Reward Controller      | [`0xdd27Ce16F1B59818c6A4C428F8BDD5d3BA652539`](https://sepolia.etherscan.io/address/0xdd27Ce16F1B59818c6A4C428F8BDD5d3BA652539) |
 | Staking Pool (Beacon)  | [`0xF66A9999ea07825232CeEa4F75711715934333D1`](https://sepolia.etherscan.io/address/0xF66A9999ea07825232CeEa4F75711715934333D1) |
-| Eden Factory           | [`0x28F0BC53b52208c8286A4C663680C2eD99d18982`](https://sepolia.etherscan.io/address/0x28F0BC53b52208c8286A4C663680C2eD99d18982) |
+| Spirit Factory         | [`0x28F0BC53b52208c8286A4C663680C2eD99d18982`](https://sepolia.etherscan.io/address/0x28F0BC53b52208c8286A4C663680C2eD99d18982) |
 | Spirit Vesting Factory | [`0x511cE8Dd17dAa368bEBF7E21CC4E00E1a9510319`](https://sepolia.etherscan.io/address/0x511cE8Dd17dAa368bEBF7E21CC4E00E1a9510319) |
 
 ### Logs
 
 ```shell
-forge script script/Deploy.s.sol:DeployEden --rpc-url $ETH_SEPOLIA_RPC_URL --account TESTNET_DEPLOYER --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
+forge script script/Deploy.s.sol:DeploySpirit --rpc-url $ETH_SEPOLIA_RPC_URL --account TESTNET_DEPLOYER --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
 
 [⠊] Compiling...
 No files changed, compilation skipped
@@ -40,7 +40,7 @@ Script ran successfully.
    --- SPIRIT/ETH Tick Spacing       : 200
    --- SPIRIT/ETH Pool Fee           : 10000
 
-  ===> DEPLOYING EDEN PROTOCOL
+  ===> DEPLOYING SPIRIT PROTOCOL
    --- Chain ID          :    11155111
    --- Deployer address  :    0x48CA32c738DC2Af6cE8bB33934fF1b59cF8B1831
    --- Deployer balance  :    6 ETH
@@ -49,7 +49,7 @@ Script ran successfully.
    --- Spirit Token              : 0xC280291AD69712e3dbD39965A90BAff1683D2De5
    --- Reward Controller         : 0xdd27Ce16F1B59818c6A4C428F8BDD5d3BA652539
    --- Staking Pool              : 0xF66A9999ea07825232CeEa4F75711715934333D1
-   --- Eden Factory              : 0x28F0BC53b52208c8286A4C663680C2eD99d18982
+   --- Spirit Factory              : 0x28F0BC53b52208c8286A4C663680C2eD99d18982
    --- Spirit Vesting Factory    : 0x511cE8Dd17dAa368bEBF7E21CC4E00E1a9510319
 
 
@@ -192,17 +192,17 @@ ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
 
 | Contract               | Contract Address                                                                                                                |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| EDEN Multisig          | [`0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A`](https://sepolia.basescan.org/address/0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A) |
+| SPIRIT Multisig        | [`0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A`](https://sepolia.basescan.org/address/0x3139DB2845810C4DE0727A5D5Aa24146C086eE1A) |
 | SPIRIT Token           | [`0xc7e9de362C6eA2Cc03863ECe330622146Ff1c18B`](https://sepolia.basescan.org/address/0xc7e9de362C6eA2Cc03863ECe330622146Ff1c18B) |
 | Reward Controller      | [`0x1390A073a765D0e0D21a382F4F6F0289b69BE33C`](https://sepolia.basescan.org/address/0x1390A073a765D0e0D21a382F4F6F0289b69BE33C) |
 | Staking Pool (Beacon)  | [`0x6A96aC9BAF36F8e8b6237eb402d07451217C7540`](https://sepolia.basescan.org/address/0x6A96aC9BAF36F8e8b6237eb402d07451217C7540) |
-| Eden Factory           | [`0x879d67000C938142F472fB8f2ee0b6601E2cE3C6`](https://sepolia.basescan.org/address/0x879d67000C938142F472fB8f2ee0b6601E2cE3C6) |
+| Spirit Factory         | [`0x879d67000C938142F472fB8f2ee0b6601E2cE3C6`](https://sepolia.basescan.org/address/0x879d67000C938142F472fB8f2ee0b6601E2cE3C6) |
 | Spirit Vesting Factory | [`0x94bea63d6eC10AF980bf8C7aEFeE04665D355AFe`](https://sepolia.basescan.org/address/0x94bea63d6eC10AF980bf8C7aEFeE04665D355AFe) |
 
 ### Logs
 
 ```shell
-forge script script/Deploy.s.sol:DeployEden --rpc-url $BASE_SEPOLIA_RPC_URL --account TESTNET_DEPLOYER --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
+forge script script/Deploy.s.sol:DeploySpirit --rpc-url $BASE_SEPOLIA_RPC_URL --account TESTNET_DEPLOYER --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
 
 [⠊] Compiling...
 No files changed, compilation skipped
@@ -226,7 +226,7 @@ Script ran successfully.
    --- SPIRIT/ETH Tick Spacing       : 200
    --- SPIRIT/ETH Pool Fee           : 10000
 
-  ===> DEPLOYING EDEN PROTOCOL
+  ===> DEPLOYING SPIRIT PROTOCOL
    --- Chain ID          :    84532
    --- Deployer address  :    0x48CA32c738DC2Af6cE8bB33934fF1b59cF8B1831
    --- Deployer balance  :    52 ETH
@@ -235,7 +235,7 @@ Script ran successfully.
    --- Spirit Token              : 0xc7e9de362C6eA2Cc03863ECe330622146Ff1c18B
    --- Reward Controller         : 0x1390A073a765D0e0D21a382F4F6F0289b69BE33C
    --- Staking Pool              : 0x6A96aC9BAF36F8e8b6237eb402d07451217C7540
-   --- Eden Factory              : 0x879d67000C938142F472fB8f2ee0b6601E2cE3C6
+   --- Spirit Factory              : 0x879d67000C938142F472fB8f2ee0b6601E2cE3C6
    --- Spirit Vesting Factory    : 0x94bea63d6eC10AF980bf8C7aEFeE04665D355AFe
 
 

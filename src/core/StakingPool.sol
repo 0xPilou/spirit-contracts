@@ -117,6 +117,7 @@ contract StakingPool is IStakingPool, Initializable {
         // Note : ensure that even if every stakers unstake, the distribution flow will keep running
         distributionPool.updateMemberUnits(address(this), 1);
 
+        // Stake the artist and agent tokens for the initial staking
         _stake(artist, _STAKEHOLDER_AMOUNT, STAKEHOLDER_LOCKING_PERIOD);
         _stake(agent, _STAKEHOLDER_AMOUNT, STAKEHOLDER_LOCKING_PERIOD);
     }
@@ -165,6 +166,8 @@ contract StakingPool is IStakingPool, Initializable {
 
         distributionPool.increaseMemberUnits(msg.sender, unitsToAdd);
         child.transferFrom(msg.sender, address(this), amount);
+
+        emit IncreasedStake(msg.sender, amount);
     }
 
     /// @inheritdoc IStakingPool
@@ -191,11 +194,15 @@ contract StakingPool is IStakingPool, Initializable {
         // Calculate units with multiplier applied
         uint128 unitsToAdd = uint128((userStakingInfo.stakedAmount * multiplier) / (MIN_MULTIPLIER * _DOWNSCALER));
 
+        uint256 lockEndDate = block.timestamp + newLockingPeriod;
+
         // Update the user's locking details
-        userStakingInfo.lockedUntil = block.timestamp + newLockingPeriod;
+        userStakingInfo.lockedUntil = lockEndDate;
 
         // Update the user's units
         distributionPool.increaseMemberUnits(msg.sender, unitsToAdd);
+
+        emit ExtendedLockingPeriod(msg.sender, lockEndDate);
     }
 
     /// @inheritdoc IStakingPool
@@ -235,6 +242,8 @@ contract StakingPool is IStakingPool, Initializable {
 
         // Transfer staked tokens back to user
         child.transfer(msg.sender, amount);
+
+        emit Unstaked(msg.sender, amount);
     }
 
     /// @inheritdoc IStakingPool
@@ -296,6 +305,8 @@ contract StakingPool is IStakingPool, Initializable {
 
         distributionPool.updateMemberUnits(staker, units);
         child.transferFrom(msg.sender, address(this), amount);
+
+        emit Staked(staker, amount, lockingPeriod);
     }
 
     //      __  ___          ___ _____

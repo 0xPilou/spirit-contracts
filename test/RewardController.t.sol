@@ -7,12 +7,12 @@ import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/cont
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 import { IRewardController } from "src/interfaces/core/IRewardController.sol";
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
-import { EdenTestBase } from "test/base/EdenTestBase.t.sol";
+import { SpiritTestBase } from "test/base/SpiritTestBase.t.sol";
 
 using SafeCast for int256;
 using SuperTokenV1Library for ISuperToken;
 
-contract RewardControllerTest is EdenTestBase {
+contract RewardControllerTest is SpiritTestBase {
 
     function setUp() public override {
         super.setUp();
@@ -33,7 +33,7 @@ contract RewardControllerTest is EdenTestBase {
         vm.assume(child != address(0));
         vm.assume(stakingPool != address(0));
 
-        vm.prank(address(_edenFactory));
+        vm.prank(address(_spiritFactory));
         _rewardController.setStakingPool(child, IStakingPool(stakingPool));
 
         assertEq(address(_rewardController.stakingPools(child)), stakingPool);
@@ -42,7 +42,7 @@ contract RewardControllerTest is EdenTestBase {
     function test_setStakingPool_invalid_caller(address invalidCaller, address child, address stakingPool) public {
         vm.assume(child != address(0));
         vm.assume(stakingPool != address(0));
-        vm.assume(invalidCaller != address(_edenFactory));
+        vm.assume(invalidCaller != address(_spiritFactory));
 
         vm.prank(invalidCaller);
         vm.expectRevert();
@@ -52,7 +52,7 @@ contract RewardControllerTest is EdenTestBase {
     function test_setStakingPool_invalid_child(address stakingPool) public {
         vm.assume(stakingPool != address(0));
 
-        vm.prank(address(_edenFactory));
+        vm.prank(address(_spiritFactory));
         vm.expectRevert(IRewardController.INVALID_CHILD.selector);
         _rewardController.setStakingPool(address(0), IStakingPool(stakingPool));
     }
@@ -65,12 +65,12 @@ contract RewardControllerTest is EdenTestBase {
         vm.assume(stakingPool2 != address(0));
         vm.assume(stakingPool1 != stakingPool2);
 
-        vm.prank(address(_edenFactory));
+        vm.prank(address(_spiritFactory));
         _rewardController.setStakingPool(child, IStakingPool(stakingPool1));
 
         assertEq(address(_rewardController.stakingPools(child)), stakingPool1);
 
-        vm.prank(address(_edenFactory));
+        vm.prank(address(_spiritFactory));
         vm.expectRevert(IRewardController.STAKING_POOL_ALREADY_SET.selector);
         _rewardController.setStakingPool(child, IStakingPool(stakingPool2));
     }
@@ -141,7 +141,7 @@ contract RewardControllerTest is EdenTestBase {
     function _setupChild() internal returns (ISuperToken childToken, IStakingPool stakingPool) {
         vm.prank(ADMIN);
         (childToken, stakingPool) =
-            _edenFactory.createChild("New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), DEFAULT_SQRT_PRICE_X96);
+            _spiritFactory.createChild("New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), DEFAULT_SQRT_PRICE_X96);
 
         assertEq(address(_rewardController.stakingPools(address(childToken))), address(stakingPool));
     }

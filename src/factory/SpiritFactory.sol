@@ -34,11 +34,16 @@ import {
     ClaimingWindow,
     IAirstreamFactory
 } from "src/interfaces/external/IAirstreamFactory.sol";
-import { IEdenFactory } from "src/interfaces/factory/IEdenFactory.sol";
+import { ISpiritFactory } from "src/interfaces/factory/ISpiritFactory.sol";
 import { IChildSuperToken } from "src/interfaces/token/IChildSuperToken.sol";
 import { ChildSuperToken } from "src/token/ChildSuperToken.sol";
 
-contract EdenFactory is IEdenFactory, Initializable, AccessControl {
+/**
+ * @title SpiritFactory
+ * @notice SpiritFactory contract
+ * @dev This contract is used to create child tokens and staking pools
+ */
+contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
 
     //      ____                          __        __    __        _____ __        __
     //     /  _/___ ___  ____ ___  __  __/ /_____ _/ /_  / /__     / ___// /_____ _/ /____  _____
@@ -46,24 +51,46 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
     //   _/ // / / / / / / / / / / /_/ / /_/ /_/ / /_/ / /  __/   ___/ / /_/ /_/ / /_/  __(__  )
     //  /___/_/ /_/ /_/_/ /_/ /_/\__,_/\__/\__,_/_.___/_/\___/   /____/\__/\__,_/\__/\___/____/
 
-    bytes32 public constant FACTORY_ROLE = keccak256("FACTORY_ROLE");
-    bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
-
+    /// @notice SPIRIT SuperToken distributed as rewards
     ISuperToken public immutable SPIRIT;
+
+    /// @notice beacon for deploying staking pool proxies
     UpgradeableBeacon public immutable STAKING_POOL_BEACON;
+
+    /// @notice SuperToken factory for creating child tokennos
     ISuperTokenFactory public immutable SUPER_TOKEN_FACTORY;
+
+    /// @notice RewardController contract responsible for distributing SPIRIT rewards
     IRewardController public immutable REWARD_CONTROLLER;
 
+    /// @notice Uniswap V4 PositionManager contract
     IPositionManager public immutable POSITION_MANAGER;
+
+    /// @notice Uniswap V4 PoolManager contract
     IPoolManager public immutable POOL_MANAGER;
+
+    /// @notice Permit2 contract address
     IPermit2 public immutable PERMIT2;
+
+    /// @notice AirstreamFactory contract for Airstream distribution
     IAirstreamFactory public immutable AIRSTREAM_FACTORY;
 
+    /// @notice Total supply of each child token (1 billion)
     uint256 public constant CHILD_TOTAL_SUPPLY = 1_000_000_000 ether;
+
+    /// @notice Default amount of tokens supplied to the liquidity pool (250 million)
     uint256 public constant DEFAULT_LIQUIDITY_SUPPLY = 250_000_000 ether;
+
+    /// @notice Amount of tokens reserved for the Airstream (250 million)
     uint96 public constant AIRSTREAM_SUPPLY = 250_000_000 ether;
+
+    /// @notice Duration of the Airstream distribution (52 weeks = 1 year)
     uint64 public constant AIRSTREAM_DURATION = 52 weeks;
+
+    /// @notice Default fee for the created Uniswap pool (in hundredths of a bip, 0.01%)
     uint24 public constant DEFAULT_POOL_FEE = 10_000;
+
+    /// @notice Default tick spacing for the created Uniswap pool
     int24 public constant DEFAULT_TICK_SPACING = 200;
 
     //     ______                 __                  __
@@ -72,6 +99,17 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
     //  / /___/ /_/ / / / (__  ) /_/ /  / /_/ / /__/ /_/ /_/ / /
     //  \____/\____/_/ /_/____/\__/_/   \__,_/\___/\__/\____/_/
 
+    /**
+     * @notice SpiritFactory contract constructor
+     * @param _stakingPoolBeacon The beacon for deploying staking pool proxies
+     * @param _spirit The SPIRIT SuperToken distributed as rewards
+     * @param _rewardController The RewardController contract responsible for distributing SPIRIT rewards
+     * @param _superTokenFactory The SuperToken factory for creating child tokens
+     * @param _positionManager The Uniswap V4 PositionManager contract
+     * @param _poolManager The Uniswap V4 PoolManager contract
+     * @param _permit2 The Permit2 contract address
+     * @param _airstreamFactory The AirstreamFactory contract for Airstream distribution
+     */
     constructor(
         address _stakingPoolBeacon,
         ISuperToken _spirit,
@@ -82,6 +120,8 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
         IPermit2 _permit2,
         IAirstreamFactory _airstreamFactory
     ) {
+        _disableInitializers();
+
         STAKING_POOL_BEACON = UpgradeableBeacon(_stakingPoolBeacon);
         SPIRIT = _spirit;
         REWARD_CONTROLLER = _rewardController;
@@ -92,6 +132,10 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
         AIRSTREAM_FACTORY = IAirstreamFactory(_airstreamFactory);
     }
 
+    /**
+     * @notice Initializes the SpiritFactory contract
+     * @param admin The address to grant the DEFAULT_ADMIN_ROLE
+     */
     function initialize(address admin) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
@@ -102,6 +146,7 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
     //   / /____>  </ /_/  __/ /  / / / / /_/ / /  / __/ / /_/ / / / / /__/ /_/ / /_/ / / / (__  )
     //  /_____/_/|_|\__/\___/_/  /_/ /_/\__,_/_/  /_/    \__,_/_/ /_/\___/\__/_/\____/_/ /_/____/
 
+    /// @inheritdoc ISpiritFactory
     function createChild(
         string memory name,
         string memory symbol,
@@ -113,6 +158,7 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
         (child, stakingPool) = _createChild(name, symbol, artist, agent, 0, merkleRoot, initialSqrtPriceX96);
     }
 
+    /// @inheritdoc ISpiritFactory
     function createChild(
         string memory name,
         string memory symbol,
@@ -129,6 +175,7 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
             _createChild(name, symbol, artist, agent, specialAllocation, merkleRoot, initialSqrtPriceX96);
     }
 
+    /// @inheritdoc ISpiritFactory
     function upgradeTo(address newImplementation, bytes calldata data) external onlyRole(DEFAULT_ADMIN_ROLE) {
         ERC1967Utils.upgradeToAndCall(newImplementation, data);
     }
@@ -169,6 +216,8 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
         if (remainingBalance > 0) {
             child.transfer(msg.sender, remainingBalance);
         }
+
+        emit ChildTokenCreated(address(child), address(stakingPool), artist, agent, merkleRoot);
     }
 
     function _deployAirstream(string memory name, address childToken, bytes32 merkleRoot) internal {
@@ -227,9 +276,6 @@ contract EdenFactory is IEdenFactory, Initializable, AccessControl {
         IStakingPool(stakingPool).initialize(ISuperToken(childToken), artist, agent);
     }
 
-    /**
-     * @notice Initializes the Uniswap V4 pool
-     */
     function _setupUniswapPool(address childToken, uint256 childTokenAmount, uint160 initialSqrtPriceX96)
         internal
         returns (uint256 tokenId)

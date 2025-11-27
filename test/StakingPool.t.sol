@@ -6,12 +6,12 @@ import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/cont
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
 
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
-import { EdenTestBase } from "test/base/EdenTestBase.t.sol";
+import { SpiritTestBase } from "test/base/SpiritTestBase.t.sol";
 
 using SafeCast for int256;
 using SuperTokenV1Library for ISuperToken;
 
-contract StakingPoolTest is EdenTestBase {
+contract StakingPoolTest is SpiritTestBase {
 
     // Contract under test
     IStakingPool internal _stakingPool;
@@ -25,7 +25,7 @@ contract StakingPoolTest is EdenTestBase {
 
         // Deploy and initialize the StakingPool
         vm.prank(ADMIN);
-        (_childToken, _stakingPool) = _edenFactory.createChild(
+        (_childToken, _stakingPool) = _spiritFactory.createChild(
             "Child Token", "CHILD", ARTIST, AGENT, _AVAILABLE_SUPPLY, bytes32(0), DEFAULT_SQRT_PRICE_X96
         );
     }
