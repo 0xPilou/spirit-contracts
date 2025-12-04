@@ -254,6 +254,33 @@ contract StakingPool is IStakingPool, Initializable {
         SPIRIT.distributeFlow(address(this), distributionPool, flowRate);
     }
 
+    /// @inheritdoc IStakingPool
+    function terminateDistributionFlow(address remainderRecipient) external onlyRewardController {
+        // If there is only the pool distributor itself in the pool, we do not need to terminate the flow
+        if (distributionPool.getTotalUnits() == distributionPool.getUnits(address(this))) {
+            revert NO_MEMBERS_IN_POOL();
+        }
+
+        // Stops the distribution flow
+        SPIRIT.distributeFlow(address(this), distributionPool, 0);
+
+        // Update the pool distributor (this contract) units to 0
+        distributionPool.updateMemberUnits(address(this), 0);
+
+        uint256 requestedAmount = SPIRIT.balanceOf(address(this));
+
+        // Distribute the remaining SPIRIT tokens to the distribution pool members
+        uint256 actualAmount = SPIRIT.distribute(distributionPool, requestedAmount);
+
+        // Update the pool distributor (this contract) units back to 1
+        distributionPool.updateMemberUnits(address(this), 1);
+
+        if (actualAmount < requestedAmount) {
+            // Transfer the remaining SPIRIT tokens to the remainder recipient
+            SPIRIT.transfer(remainderRecipient, requestedAmount - actualAmount);
+        }
+    }
+
     //   _    ___                 ______                 __  _
     //  | |  / (_)__ _      __   / ____/_  ______  _____/ /_(_)___  ____  _____
     //  | | / / / _ \ | /| / /  / /_  / / / / __ \/ ___/ __/ / __ \/ __ \/ ___/

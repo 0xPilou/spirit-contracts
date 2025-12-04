@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { IERC20 } from "@openzeppelin-v5/contracts/interfaces/IERC20.sol";
 import { SafeCast } from "@openzeppelin-v5/contracts/utils/math/SafeCast.sol";
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
-import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import { console } from "forge-std/console.sol";
 
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 import { SpiritTestBase } from "test/base/SpiritTestBase.t.sol";
@@ -376,6 +378,103 @@ contract StakingPoolTest is SpiritTestBase {
         vm.expectRevert(abi.encodeWithSelector(IStakingPool.NOT_REWARD_CONTROLLER.selector));
         _stakingPool.refreshDistributionFlow();
         vm.stopPrank();
+    }
+
+    function test_terminateDistributionFlow(address nonRewardController, uint256 amountToDistribute, uint256 deltaTime)
+        public
+    {
+        amountToDistribute = bound(amountToDistribute, 1e18, _AVAILABLE_SUPPLY);
+        deltaTime = bound(deltaTime, 1, _stakingPool.STREAM_OUT_DURATION() - 1 minutes);
+
+        vm.assume(nonRewardController != address(_rewardController));
+
+        dealSuperToken(TREASURY, address(_rewardController), _spirit, amountToDistribute);
+
+        vm.startPrank(address(_rewardController));
+        _spirit.transfer(address(_stakingPool), amountToDistribute);
+        _stakingPool.refreshDistributionFlow();
+        vm.stopPrank();
+
+        int96 expectedFlowRate = int256(amountToDistribute / _stakingPool.STREAM_OUT_DURATION()).toInt96();
+        assertApproxEqAbs(
+            int256(_spirit.getFlowRate(address(_stakingPool), address(_stakingPool.distributionPool()))),
+            int256(expectedFlowRate),
+            uint256(int256(expectedFlowRate * 100 / 10_000)), // allow 1% error tolerance
+            "Flow rate mismatch"
+        );
+
+        vm.startPrank(ARTIST);
+        _spirit.connectPool(_stakingPool.distributionPool());
+        vm.stopPrank();
+
+        vm.startPrank(AGENT);
+        _spirit.connectPool(_stakingPool.distributionPool());
+        vm.stopPrank();
+
+        address remainderRecipient = makeAddr("remainderRecipient");
+
+        assertGt(_spirit.balanceOf(address(_stakingPool)), 0, "Staking pool balance should be greater than 0");
+
+        vm.warp(block.timestamp + deltaTime);
+
+        vm.prank(nonRewardController);
+        vm.expectRevert(abi.encodeWithSelector(IStakingPool.NOT_REWARD_CONTROLLER.selector));
+        _stakingPool.terminateDistributionFlow(remainderRecipient);
+
+        vm.prank(address(_rewardController));
+        _stakingPool.terminateDistributionFlow(remainderRecipient);
+
+        assertEq(_spirit.balanceOf(address(_stakingPool)), 0, "Staking pool balance should be 0");
+
+        uint256 artistBalance = _spirit.balanceOf(ARTIST);
+        uint256 agentBalance = _spirit.balanceOf(AGENT);
+        uint256 remainderRecipientBalance = _spirit.balanceOf(remainderRecipient);
+
+        assertApproxEqAbs(
+            artistBalance + agentBalance + remainderRecipientBalance,
+            amountToDistribute,
+            uint256(int256(amountToDistribute / 10_000)), // allow 0.01% error tolerance
+            "Total balance should be equal to the distributed amount"
+        );
+    }
+
+    function test_terminateDistributionFlow_noStakers(uint256 amountToDistribute, uint256 deltaTime) public {
+        vm.warp(block.timestamp + 53 weeks);
+
+        uint256 agentStakedAmount = _stakingPool.getStakingInfo(AGENT).stakedAmount;
+        uint256 artistStakedAmount = _stakingPool.getStakingInfo(ARTIST).stakedAmount;
+
+        vm.prank(AGENT);
+        _stakingPool.unstake(agentStakedAmount);
+
+        vm.prank(ARTIST);
+        _stakingPool.unstake(artistStakedAmount);
+
+        amountToDistribute = bound(amountToDistribute, 1e18, _AVAILABLE_SUPPLY);
+        deltaTime = bound(deltaTime, 1, _stakingPool.STREAM_OUT_DURATION() - 5 hours);
+
+        dealSuperToken(TREASURY, address(_rewardController), _spirit, amountToDistribute);
+
+        vm.startPrank(address(_rewardController));
+        _spirit.transfer(address(_stakingPool), amountToDistribute);
+        _stakingPool.refreshDistributionFlow();
+        vm.stopPrank();
+
+        int96 expectedFlowRate = int256(amountToDistribute / _stakingPool.STREAM_OUT_DURATION()).toInt96();
+        assertApproxEqAbs(
+            int256(_spirit.getFlowRate(address(_stakingPool), address(_stakingPool.distributionPool()))),
+            int256(expectedFlowRate),
+            uint256(int256(expectedFlowRate * 100 / 10_000)), // allow 1% error tolerance
+            "Flow rate mismatch"
+        );
+
+        vm.warp(block.timestamp + deltaTime);
+
+        address remainderRecipient = makeAddr("remainderRecipient");
+
+        vm.prank(address(_rewardController));
+        vm.expectRevert(abi.encodeWithSelector(IStakingPool.NO_MEMBERS_IN_POOL.selector));
+        _stakingPool.terminateDistributionFlow(remainderRecipient);
     }
 
     function test_calculateMultiplier_characteristics(uint256 lockingPeriod) public view {

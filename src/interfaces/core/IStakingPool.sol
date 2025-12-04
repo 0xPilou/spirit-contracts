@@ -70,6 +70,9 @@ interface IStakingPool {
     /// @notice Thrown when attempting to withdraw tokens that are still locked.
     error TOKENS_STILL_LOCKED();
 
+    /// @notice Thrown when attempting to terminate the distribution flow when there are no members in the pool
+    error NO_MEMBERS_IN_POOL();
+
     //      ______     __                        __   ______                 __  _
     //     / ____/  __/ /____  _________  ____ _/ /  / ____/_  ______  _____/ /_(_)___  ____  _____
     //    / __/ | |/_/ __/ _ \/ ___/ __ \/ __ `/ /  / /_  / / / / __ \/ ___/ __/ / __ \/ __ \/ ___/
@@ -111,8 +114,16 @@ interface IStakingPool {
 
     /**
      * @notice Refreshes distribution flow
+     * @dev Only callable by the reward controller
      */
     function refreshDistributionFlow() external;
+
+    /**
+     * @notice Terminates distribution flow
+     * @dev Only callable by the reward controller
+     * @param remainderRecipient Remainder recipient address
+     */
+    function terminateDistributionFlow(address remainderRecipient) external;
 
     //   _    ___                 ______                 __  _
     //  | |  / (_)__ _      __   / ____/_  ______  _____/ /_(_)___  ____  _____
