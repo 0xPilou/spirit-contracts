@@ -55,6 +55,12 @@ contract SpiritVestingFactoryTest is SpiritTestBase {
 
         assertNotEq(newSpiritVestingContract, address(0), "New spirit vesting contract should be created");
         assertEq(_spiritVestingFactory.balanceOf(recipient), amount, "Balance should be updated");
+
+        vm.prank(TREASURY);
+        vm.expectRevert(ISpiritVestingFactory.RECIPIENT_ALREADY_HAS_VESTING_CONTRACT.selector);
+        _spiritVestingFactory.createSpiritVestingContract(
+            recipient, amount, cliffAmount, cliffDate, uint32(block.timestamp + CLIFF_PERIOD + VESTING_DURATION)
+        );
     }
 
     function testSetTreasury(address newTreasury, address nonTreasury) public {
