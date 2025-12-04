@@ -296,8 +296,12 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         });
 
         // Initialize the pool
-        POSITION_MANAGER.initializePool(poolKey, initialSqrtPriceX96);
+        int24 currentTick = POSITION_MANAGER.initializePool(poolKey, initialSqrtPriceX96);
 
+        // Ensure the pool was initialized successfully
+        if (currentTick == type(int24).max) revert POOL_INITIALIZATION_FAILED();
+
+        // Mint the liquidity position
         tokenId = _mintSingleSidedLiquidityPosition(childToken, childTokenAmount, poolKey);
     }
 

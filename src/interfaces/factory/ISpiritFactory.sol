@@ -33,6 +33,9 @@ interface ISpiritFactory {
     /// @notice Thrown when the special allocation is greater than the default liquidity supply
     error INVALID_SPECIAL_ALLOCATION();
 
+    /// @notice Thrown when the Uniswap V4 pool initialization fails or has been initialized before
+    error POOL_INITIALIZATION_FAILED();
+
     //      ______     __                        __   ______                 __  _
     //     / ____/  __/ /____  _________  ____ _/ /  / ____/_  ______  _____/ /_(_)___  ____  _____
     //    / __/ | |/_/ __/ _ \/ ___/ __ \/ __ `/ /  / /_  / / / / __ \/ ___/ __/ / __ \/ __ \/ ___/
