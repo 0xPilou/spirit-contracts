@@ -87,7 +87,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
     /// @notice Duration of the Airstream distribution (52 weeks = 1 year)
     uint64 public constant AIRSTREAM_DURATION = 52 weeks;
 
-    /// @notice Default fee for the created Uniswap pool (in hundredths of a bip, 0.01%)
+    /// @notice Default fee for the created Uniswap pool (1%)
     uint24 public constant DEFAULT_POOL_FEE = 10_000;
 
     /// @notice Default tick spacing for the created Uniswap pool
