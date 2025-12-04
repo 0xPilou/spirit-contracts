@@ -8,7 +8,15 @@ import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 import { ISpiritFactory } from "src/interfaces/factory/ISpiritFactory.sol";
 import { SpiritTestBase } from "test/base/SpiritTestBase.t.sol";
 
+import { IHooks } from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+
+import { Currency } from "@uniswap/v4-core/src/types/Currency.sol";
+import { PoolKey } from "@uniswap/v4-core/src/types/PoolKey.sol";
+import { ChildSuperToken } from "src/token/ChildSuperToken.sol";
+
 contract SpiritFactoryTest is SpiritTestBase {
+
+    uint160 internal constant MALICIOUS_SQRT_PRICE_X96 = 250_541_448_375_047_946_302_209_916_928;
 
     function setUp() public override {
         super.setUp();
@@ -124,6 +132,49 @@ contract SpiritFactoryTest is SpiritTestBase {
         _spiritFactory.createChild(
             "New Child Token", "NEWCHILD", ARTIST, AGENT, specialAllocation, bytes32(0), DEFAULT_SQRT_PRICE_X96
         );
+    }
+
+    function test_createChild_invalid_poolAlreadyInitialized() public {
+        // Simulate a malicious actor "guessing" a child token address and initializing the pool with it
+
+        // Predict the child token address
+        address predictedChildTokenAddress = _helper_predictChildTokenAddress("New Child Token", "NEWCHILD");
+
+        // Maliciously initalize the pool with predicted child token address
+        Currency currency0 = predictedChildTokenAddress < address(_spirit)
+            ? Currency.wrap(address(predictedChildTokenAddress))
+            : Currency.wrap(address(_spirit));
+        Currency currency1 = predictedChildTokenAddress > address(_spirit)
+            ? Currency.wrap(address(predictedChildTokenAddress))
+            : Currency.wrap(address(_spirit));
+
+        // Create the pool key
+        PoolKey memory poolKey = PoolKey({
+            currency0: currency0,
+            currency1: currency1,
+            fee: 10_000,
+            tickSpacing: 200,
+            hooks: IHooks(address(0))
+        });
+
+        // Initialize the pool
+        positionManager.initializePool(poolKey, MALICIOUS_SQRT_PRICE_X96);
+
+        vm.prank(ADMIN);
+        vm.expectRevert(ISpiritFactory.POOL_INITIALIZATION_FAILED.selector);
+        _spiritFactory.createChild("New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), DEFAULT_SQRT_PRICE_X96);
+    }
+
+    function _helper_predictChildTokenAddress(string memory name, string memory symbol)
+        internal
+        view
+        returns (address predicted)
+    {
+        bytes32 salt = keccak256(abi.encode(name, symbol));
+        bytes32 hash = keccak256(
+            abi.encodePacked(bytes1(0xff), address(_spiritFactory), salt, keccak256(type(ChildSuperToken).creationCode))
+        );
+        return address(uint160(uint256(hash)));
     }
 
 }
