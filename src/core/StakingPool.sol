@@ -2,6 +2,8 @@ pragma solidity ^0.8.26;
 
 /* Openzeppelin Imports */
 import { Initializable } from "@openzeppelin-v5/contracts/proxy/utils/Initializable.sol";
+
+import { Math } from "@openzeppelin-v5/contracts/utils/math/Math.sol";
 import { SafeCast } from "@openzeppelin-v5/contracts/utils/math/SafeCast.sol";
 
 /* Superfluid Imports */
@@ -16,6 +18,7 @@ import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 /* Library Settings */
 using SuperTokenV1Library for ISuperToken;
 using SafeCast for int256;
+using Math for uint256;
 
 /**
  * @title StakingPool
@@ -225,9 +228,9 @@ contract StakingPool is IStakingPool, Initializable {
         }
 
         // Get current units and calculate units to remove proportionally
-        // This maintains the exact proportional relationship between units and staked amount
         uint128 currentUnits = distributionPool.getUnits(msg.sender);
-        uint128 unitsToRemove = uint128((amount * currentUnits) / userStakingInfo.stakedAmount);
+        uint128 calculatedUnitsToRemove = uint128(Math.ceilDiv(amount * currentUnits, userStakingInfo.stakedAmount));
+        uint128 unitsToRemove = uint128(Math.min(calculatedUnitsToRemove, currentUnits));
 
         // Update member units
         distributionPool.decreaseMemberUnits(msg.sender, unitsToRemove);
