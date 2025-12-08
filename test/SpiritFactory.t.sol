@@ -34,11 +34,11 @@ contract SpiritFactoryTest is SpiritTestBase {
     {
         vm.prank(ADMIN);
         if (specialAllocation == 0) {
-            (newChildToken, newStakingPool) = _spiritFactory.createChild(
+            (newChildToken, newStakingPool,,) = _spiritFactory.createChild(
                 "New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), DEFAULT_SQRT_PRICE_X96
             );
         } else {
-            (newChildToken, newStakingPool) = _spiritFactory.createChild(
+            (newChildToken, newStakingPool,,) = _spiritFactory.createChild(
                 "New Child Token", "NEWCHILD", ARTIST, AGENT, specialAllocation, bytes32(0), DEFAULT_SQRT_PRICE_X96
             );
         }
