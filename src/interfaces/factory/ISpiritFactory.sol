@@ -53,6 +53,8 @@ interface ISpiritFactory {
      * @param initialSqrtPriceX96 The initial sqrt price X96 for the Uniswap V4 pool SPIRIT/CHILD
      * @return child The address of the child token
      * @return stakingPool The address of the staking pool
+     * @return airstreamAddress The address of the airstream
+     * @return controllerAddress The address of the airstream controller
      */
     function createChild(
         string memory name,
@@ -61,7 +63,9 @@ interface ISpiritFactory {
         address agent,
         bytes32 merkleRoot,
         uint160 initialSqrtPriceX96
-    ) external returns (ISuperToken child, IStakingPool stakingPool);
+    )
+        external
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress);
 
     /**
      * @notice Creates a child token and staking pool
@@ -75,6 +79,8 @@ interface ISpiritFactory {
      * @param initialSqrtPriceX96 The initial sqrt price X96 for the Uniswap V4 pool SPIRIT/CHILD
      * @return child The address of the child token
      * @return stakingPool The address of the staking pool
+     * @return airstreamAddress The address of the airstream
+     * @return controllerAddress The address of the airstream controller
      */
     function createChild(
         string memory name,
@@ -84,7 +90,9 @@ interface ISpiritFactory {
         uint256 specialAllocation,
         bytes32 merkleRoot,
         uint160 initialSqrtPriceX96
-    ) external returns (ISuperToken child, IStakingPool stakingPool);
+    )
+        external
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress);
 
     /**
      * @notice Terminates the airstream for a child token and returns the remaining tokens to the callers

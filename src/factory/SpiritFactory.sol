@@ -6,6 +6,7 @@ import { ERC1967Utils } from "@openzeppelin-v5/contracts/proxy/ERC1967/ERC1967Ut
 import { BeaconProxy } from "@openzeppelin-v5/contracts/proxy/beacon/BeaconProxy.sol";
 import { UpgradeableBeacon } from "@openzeppelin-v5/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import { Initializable } from "@openzeppelin-v5/contracts/proxy/utils/Initializable.sol";
+import { IERC20 } from "@openzeppelin-v5/contracts/token/ERC20/IERC20.sol";
 
 /* Superfluid Imports */
 import { ISuperTokenFactory } from
@@ -165,8 +166,13 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         address agent,
         bytes32 merkleRoot,
         uint160 initialSqrtPriceX96
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (ISuperToken child, IStakingPool stakingPool) {
-        (child, stakingPool) = _createChild(name, symbol, artist, agent, 0, merkleRoot, initialSqrtPriceX96);
+    )
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
+    {
+        (child, stakingPool, airstreamAddress, controllerAddress) =
+            _createChild(name, symbol, artist, agent, 0, merkleRoot, initialSqrtPriceX96);
     }
 
     /// @inheritdoc ISpiritFactory
@@ -178,11 +184,15 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         uint256 specialAllocation,
         bytes32 merkleRoot,
         uint160 initialSqrtPriceX96
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (ISuperToken child, IStakingPool stakingPool) {
+    )
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
+    {
         // Ensure the special allocation is not greater than the default liquidity supply
         if (specialAllocation >= DEFAULT_LIQUIDITY_SUPPLY) revert INVALID_SPECIAL_ALLOCATION();
 
-        (child, stakingPool) =
+        (child, stakingPool, airstreamAddress, controllerAddress) =
             _createChild(name, symbol, artist, agent, specialAllocation, merkleRoot, initialSqrtPriceX96);
     }
 
@@ -213,7 +223,10 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         uint256 specialAllocation,
         bytes32 merkleRoot,
         uint160 initialSqrtPriceX96
-    ) internal returns (ISuperToken child, IStakingPool stakingPool) {
+    )
+        internal
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
+    {
         // deploy the new child token with default 1B supply to the caller (admin)
         child = ISuperToken(_deployToken(name, symbol, CHILD_TOTAL_SUPPLY));
 
@@ -227,7 +240,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         _setupUniswapPool(address(child), DEFAULT_LIQUIDITY_SUPPLY - specialAllocation, initialSqrtPriceX96);
 
         // Deploy the Airstreams
-        _deployAirstream(name, address(child), merkleRoot);
+        (airstreamAddress, controllerAddress) = _deployAirstream(name, address(child), merkleRoot);
 
         // Transfer the remaining balance (if any) to the caller (admin)
         uint256 remainingBalance = child.balanceOf(address(this));
