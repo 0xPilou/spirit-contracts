@@ -28,6 +28,8 @@ import { LiquidityAmounts } from "@uniswap/v4-periphery/src/libraries/LiquidityA
 /* Local Imports */
 import { IRewardController } from "src/interfaces/core/IRewardController.sol";
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
+
+import { IAirstreamController } from "src/interfaces/external/IAirstreamController.sol";
 import {
     AirstreamConfig,
     AirstreamExtendedConfig,
@@ -92,6 +94,15 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
 
     /// @notice Default tick spacing for the created Uniswap pool
     int24 public constant DEFAULT_TICK_SPACING = 200;
+
+    //     _____ __        __
+    //    / ___// /_____ _/ /____  _____
+    //    \__ \/ __/ __ `/ __/ _ \/ ___/
+    //   ___/ / /_/ /_/ / /_/  __(__  )
+    //  /____/\__/\__,_/\__/\___/____/
+
+    /// @notice Mapping of child token addresses to their corresponding airstream controller interface
+    mapping(address childToken => IAirstreamController controllerAddress) private _airstreamControllers;
 
     //     ______                 __                  __
     //    / ____/___  ____  _____/ /________  _______/ /_____  _____
@@ -176,6 +187,14 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
     }
 
     /// @inheritdoc ISpiritFactory
+    function terminateAirstream(address childToken) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        IAirstreamController controller = _airstreamControllers[childToken];
+        controller.pauseAirstream();
+        controller.withdraw(address(childToken));
+        IERC20(childToken).transfer(msg.sender, IERC20(childToken).balanceOf(address(this)));
+    }
+
+    /// @inheritdoc ISpiritFactory
     function upgradeTo(address newImplementation, bytes calldata data) external onlyRole(DEFAULT_ADMIN_ROLE) {
         ERC1967Utils.upgradeToAndCall(newImplementation, data);
     }
@@ -220,7 +239,10 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         emit ChildTokenCreated(address(child), address(stakingPool), artist, agent, merkleRoot);
     }
 
-    function _deployAirstream(string memory name, address childToken, bytes32 merkleRoot) internal {
+    function _deployAirstream(string memory name, address childToken, bytes32 merkleRoot)
+        internal
+        returns (address airstreamAddress, address controllerAddress)
+    {
         AirstreamConfig memory config = AirstreamConfig({
             name: name,
             token: childToken,
@@ -242,7 +264,9 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
 
         ISuperToken(childToken).approve(address(AIRSTREAM_FACTORY), AIRSTREAM_SUPPLY);
 
-        AIRSTREAM_FACTORY.createExtendedAirstream(config, extendedConfig);
+        (airstreamAddress, controllerAddress) = AIRSTREAM_FACTORY.createExtendedAirstream(config, extendedConfig);
+
+        _airstreamControllers[childToken] = IAirstreamController(controllerAddress);
     }
 
     function _deployToken(string memory name, string memory symbol, uint256 supply)

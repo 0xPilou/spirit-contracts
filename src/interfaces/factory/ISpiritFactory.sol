@@ -87,6 +87,13 @@ interface ISpiritFactory {
     ) external returns (ISuperToken child, IStakingPool stakingPool);
 
     /**
+     * @notice Terminates the airstream for a child token and returns the remaining tokens to the callers
+     * @dev This function is only callable by the DEFAULT_ADMIN_ROLE
+     * @param childToken The address of the child token
+     */
+    function terminateAirstream(address childToken) external;
+
+    /**
      * @notice Upgrades the SpiritFactory contract to a new implementation
      * @dev This function is only callable by the DEFAULT_ADMIN_ROLE
      * @param newImplementation The address of the new implementation
