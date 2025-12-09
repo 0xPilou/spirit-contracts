@@ -51,6 +51,13 @@ interface IRewardController {
     function distributeRewards(address child, uint256 amount) external;
 
     /**
+     * @notice Terminates the distribution flow of a specific staking pool.
+     * @dev Only callable by an address with the DISTRIBUTOR_ROLE.
+     * @param child The child address for which to terminate the distribution flow
+     */
+    function terminateDistribution(address child) external;
+
+    /**
      * @notice Upgrades the RewardController contract to a new implementation.
      * @dev Only callable by an address with the DEFAULT_ADMIN_ROLE.
      * @param newImplementation The new implementation contract address

@@ -50,7 +50,7 @@ library NetworkConfig {
             positionManager: 0x7C5f5A4bBd8fD63184577525326123B519429bDc,
             poolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
-            airstreamFactory: 0x0000000000000000000000000000000000000000, // TODO : Add Airstream Factory address
+            airstreamFactory: 0xAB82062c4A9E4DF736238bcfA9fea15eb763bf69,
             spiritTokenName: "Spirit Token",
             spiritTokenSymbol: "SPIRIT",
             spiritTokenSupply: 1_000_000_000 ether,
@@ -78,7 +78,7 @@ library NetworkConfig {
             positionManager: 0x4B2C77d209D3405F41a037Ec6c77F7F5b8e2ca80,
             poolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408,
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
-            airstreamFactory: 0x0000000000000000000000000000000000000000, // TODO : Add Airstream Factory address
+            airstreamFactory: 0x0000000000000000000000000000000000000000, // Airstreams not available on Base Sepolia
             spiritTokenName: "Secret Token V3",
             spiritTokenSymbol: "SECRETv3",
             spiritTokenSupply: 1_000_000_000 ether,
@@ -101,7 +101,7 @@ library NetworkConfig {
             positionManager: 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4,
             poolManager: 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543,
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
-            airstreamFactory: 0x0000000000000000000000000000000000000000, // TODO : Add Airstream Factory address
+            airstreamFactory: 0x0652b67bE172579055FE4D04e715566D78Ad43c8,
             superTokenFactory: 0x254C2e152E8602839D288A7bccdf3d0974597193,
             spiritTokenName: "Secret Token V3",
             spiritTokenSymbol: "SECRETv3",

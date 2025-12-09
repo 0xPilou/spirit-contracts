@@ -2,6 +2,8 @@ pragma solidity ^0.8.26;
 
 /* Openzeppelin Imports */
 import { Initializable } from "@openzeppelin-v5/contracts/proxy/utils/Initializable.sol";
+
+import { Math } from "@openzeppelin-v5/contracts/utils/math/Math.sol";
 import { SafeCast } from "@openzeppelin-v5/contracts/utils/math/SafeCast.sol";
 
 /* Superfluid Imports */
@@ -16,6 +18,7 @@ import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
 /* Library Settings */
 using SuperTokenV1Library for ISuperToken;
 using SafeCast for int256;
+using Math for uint256;
 
 /**
  * @title StakingPool
@@ -225,9 +228,9 @@ contract StakingPool is IStakingPool, Initializable {
         }
 
         // Get current units and calculate units to remove proportionally
-        // This maintains the exact proportional relationship between units and staked amount
         uint128 currentUnits = distributionPool.getUnits(msg.sender);
-        uint128 unitsToRemove = uint128((amount * currentUnits) / userStakingInfo.stakedAmount);
+        uint128 calculatedUnitsToRemove = uint128(Math.ceilDiv(amount * currentUnits, userStakingInfo.stakedAmount));
+        uint128 unitsToRemove = uint128(Math.min(calculatedUnitsToRemove, currentUnits));
 
         // Update member units
         distributionPool.decreaseMemberUnits(msg.sender, unitsToRemove);
@@ -252,6 +255,33 @@ contract StakingPool is IStakingPool, Initializable {
         int96 flowRate = int256(SPIRIT.balanceOf(address(this)) / STREAM_OUT_DURATION).toInt96();
 
         SPIRIT.distributeFlow(address(this), distributionPool, flowRate);
+    }
+
+    /// @inheritdoc IStakingPool
+    function terminateDistributionFlow(address remainderRecipient) external onlyRewardController {
+        // If there is only the pool distributor itself in the pool, we do not need to terminate the flow
+        if (distributionPool.getTotalUnits() == distributionPool.getUnits(address(this))) {
+            revert NO_MEMBERS_IN_POOL();
+        }
+
+        // Stops the distribution flow
+        SPIRIT.distributeFlow(address(this), distributionPool, 0);
+
+        // Update the pool distributor (this contract) units to 0
+        distributionPool.updateMemberUnits(address(this), 0);
+
+        uint256 requestedAmount = SPIRIT.balanceOf(address(this));
+
+        // Distribute the remaining SPIRIT tokens to the distribution pool members
+        uint256 actualAmount = SPIRIT.distribute(distributionPool, requestedAmount);
+
+        // Update the pool distributor (this contract) units back to 1
+        distributionPool.updateMemberUnits(address(this), 1);
+
+        if (actualAmount < requestedAmount) {
+            // Transfer the remaining SPIRIT tokens to the remainder recipient
+            SPIRIT.transfer(remainderRecipient, requestedAmount - actualAmount);
+        }
     }
 
     //   _    ___                 ______                 __  _

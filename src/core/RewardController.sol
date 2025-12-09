@@ -119,6 +119,20 @@ contract RewardController is IRewardController, AccessControl, Initializable {
     }
 
     /// @inheritdoc IRewardController
+    function terminateDistribution(address child) external onlyRole(DISTRIBUTOR_ROLE) {
+        // Gets the staking pool associated to the child
+        IStakingPool stakingPool = stakingPools[child];
+
+        // Input validation
+        if (stakingPool == IStakingPool(address(0))) {
+            revert STAKING_POOL_NOT_FOUND();
+        }
+
+        // Terminate the distribution flow of the staking pool
+        stakingPool.terminateDistributionFlow(msg.sender);
+    }
+
+    /// @inheritdoc IRewardController
     function upgradeTo(address newImplementation, bytes calldata data) external onlyRole(DEFAULT_ADMIN_ROLE) {
         ERC1967Utils.upgradeToAndCall(newImplementation, data);
     }

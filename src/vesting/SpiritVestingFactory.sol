@@ -91,7 +91,11 @@ contract SpiritVestingFactory is ISpiritVestingFactory {
         uint32 cliffDate,
         uint32 endDate
     ) external onlyTreasury returns (address newSpiritVestingContract) {
+        // Prevent cliff amount from being greater than the total amount
         if (!(cliffAmount < amount)) revert FORBIDDEN();
+
+        // Prevent creation of multiple vesting contracts for the same recipient
+        if (spiritVestings[recipient] != address(0)) revert RECIPIENT_ALREADY_HAS_VESTING_CONTRACT();
 
         uint256 vestingDuration = endDate - cliffDate;
 

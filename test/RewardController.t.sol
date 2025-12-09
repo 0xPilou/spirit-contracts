@@ -138,10 +138,80 @@ contract RewardControllerTest is SpiritTestBase {
         vm.stopPrank();
     }
 
-    function _setupChild() internal returns (ISuperToken childToken, IStakingPool stakingPool) {
+    function test_terminateDistribution(address nonDistributor, uint256 amount) public {
+        vm.assume(nonDistributor != ADMIN);
+        amount = bound(amount, 1 ether, _spirit.balanceOf(TREASURY));
+        dealSuperToken(TREASURY, ADMIN, _spirit, amount);
+
+        (ISuperToken childToken, IStakingPool stakingPool) = _setupChild();
+
+        vm.startPrank(ADMIN);
+        _spirit.approve(address(_rewardController), amount);
+        _rewardController.distributeRewards(address(childToken), amount);
+        vm.stopPrank();
+
+        int96 expectedFlowRate = int256(amount / stakingPool.STREAM_OUT_DURATION()).toInt96();
+        assertApproxEqAbs(
+            int256(_spirit.getFlowRate(address(stakingPool), address(stakingPool.distributionPool()))),
+            int256(expectedFlowRate),
+            uint256(int256(expectedFlowRate * 100 / 10_000)), // allow 1% error tolerance
+            "Flow rate mismatch"
+        );
+
+        vm.prank(nonDistributor);
+        vm.expectRevert();
+        _rewardController.terminateDistribution(address(childToken));
+
         vm.prank(ADMIN);
-        (childToken, stakingPool) =
-            _spiritFactory.createChild("New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), DEFAULT_SQRT_PRICE_X96);
+        _rewardController.terminateDistribution(address(childToken));
+
+        assertEq(
+            _spirit.getFlowRate(address(stakingPool), address(stakingPool.distributionPool())),
+            0,
+            "Flow distribution should be terminated"
+        );
+    }
+
+    function test_terminateDistribution_staking_pool_not_found(
+        address nonLinkedChild,
+        address nonDistributor,
+        uint256 amount
+    ) public {
+        vm.assume(nonLinkedChild != address(0));
+        vm.assume(nonDistributor != ADMIN);
+
+        amount = bound(amount, 1 ether, _spirit.balanceOf(TREASURY));
+        dealSuperToken(TREASURY, ADMIN, _spirit, amount);
+
+        (ISuperToken childToken, IStakingPool stakingPool) = _setupChild();
+
+        vm.assume(nonLinkedChild != address(childToken));
+
+        vm.startPrank(ADMIN);
+        _spirit.approve(address(_rewardController), amount);
+        _rewardController.distributeRewards(address(childToken), amount);
+        vm.stopPrank();
+
+        int96 expectedFlowRate = int256(amount / stakingPool.STREAM_OUT_DURATION()).toInt96();
+        assertApproxEqAbs(
+            int256(_spirit.getFlowRate(address(stakingPool), address(stakingPool.distributionPool()))),
+            int256(expectedFlowRate),
+            uint256(int256(expectedFlowRate * 100 / 10_000)), // allow 1% error tolerance
+            "Flow rate mismatch"
+        );
+
+        vm.prank(ADMIN);
+        vm.expectRevert(IRewardController.STAKING_POOL_NOT_FOUND.selector);
+        _rewardController.terminateDistribution(nonLinkedChild);
+    }
+
+    function _setupChild() internal returns (ISuperToken childToken, IStakingPool stakingPool) {
+        bytes32 salt = keccak256(abi.encode("SALT_FOR_NEW_CHILD_TOKEN"));
+
+        vm.prank(ADMIN);
+        (childToken, stakingPool,,) = _spiritFactory.createChild(
+            "New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), salt, DEFAULT_SQRT_PRICE_X96
+        );
 
         assertEq(address(_rewardController.stakingPools(address(childToken))), address(stakingPool));
     }

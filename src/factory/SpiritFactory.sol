@@ -6,6 +6,7 @@ import { ERC1967Utils } from "@openzeppelin-v5/contracts/proxy/ERC1967/ERC1967Ut
 import { BeaconProxy } from "@openzeppelin-v5/contracts/proxy/beacon/BeaconProxy.sol";
 import { UpgradeableBeacon } from "@openzeppelin-v5/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import { Initializable } from "@openzeppelin-v5/contracts/proxy/utils/Initializable.sol";
+import { IERC20 } from "@openzeppelin-v5/contracts/token/ERC20/IERC20.sol";
 
 /* Superfluid Imports */
 import { ISuperTokenFactory } from
@@ -28,6 +29,8 @@ import { LiquidityAmounts } from "@uniswap/v4-periphery/src/libraries/LiquidityA
 /* Local Imports */
 import { IRewardController } from "src/interfaces/core/IRewardController.sol";
 import { IStakingPool } from "src/interfaces/core/IStakingPool.sol";
+
+import { IAirstreamController } from "src/interfaces/external/IAirstreamController.sol";
 import {
     AirstreamConfig,
     AirstreamExtendedConfig,
@@ -87,11 +90,23 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
     /// @notice Duration of the Airstream distribution (52 weeks = 1 year)
     uint64 public constant AIRSTREAM_DURATION = 52 weeks;
 
-    /// @notice Default fee for the created Uniswap pool (in hundredths of a bip, 0.01%)
+    /// @notice Default fee for the created Uniswap pool (1%)
     uint24 public constant DEFAULT_POOL_FEE = 10_000;
 
     /// @notice Default tick spacing for the created Uniswap pool
     int24 public constant DEFAULT_TICK_SPACING = 200;
+
+    //     _____ __        __
+    //    / ___// /_____ _/ /____  _____
+    //    \__ \/ __/ __ `/ __/ _ \/ ___/
+    //   ___/ / /_/ /_/ / /_/  __(__  )
+    //  /____/\__/\__,_/\__/\___/____/
+
+    /// @notice Mapping of child token addresses to their corresponding airstream controller interface
+    mapping(address childToken => IAirstreamController controllerAddress) private _airstreamControllers;
+
+    /// @notice Mapping of child token hashes to their deployment status
+    mapping(bytes32 tokenHash => bool deployed) private _deployedChildTokens;
 
     //     ______                 __                  __
     //    / ____/___  ____  _____/ /________  _______/ /_____  _____
@@ -153,9 +168,15 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         address artist,
         address agent,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (ISuperToken child, IStakingPool stakingPool) {
-        (child, stakingPool) = _createChild(name, symbol, artist, agent, 0, merkleRoot, initialSqrtPriceX96);
+    )
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
+    {
+        (child, stakingPool, airstreamAddress, controllerAddress) =
+            _createChild(name, symbol, artist, agent, 0, merkleRoot, salt, initialSqrtPriceX96);
     }
 
     /// @inheritdoc ISpiritFactory
@@ -166,13 +187,26 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         address agent,
         uint256 specialAllocation,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (ISuperToken child, IStakingPool stakingPool) {
+    )
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
+    {
         // Ensure the special allocation is not greater than the default liquidity supply
         if (specialAllocation >= DEFAULT_LIQUIDITY_SUPPLY) revert INVALID_SPECIAL_ALLOCATION();
 
-        (child, stakingPool) =
-            _createChild(name, symbol, artist, agent, specialAllocation, merkleRoot, initialSqrtPriceX96);
+        (child, stakingPool, airstreamAddress, controllerAddress) =
+            _createChild(name, symbol, artist, agent, specialAllocation, merkleRoot, salt, initialSqrtPriceX96);
+    }
+
+    /// @inheritdoc ISpiritFactory
+    function terminateAirstream(address childToken) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        IAirstreamController controller = _airstreamControllers[childToken];
+        controller.pauseAirstream();
+        controller.withdraw(address(childToken));
+        IERC20(childToken).transfer(msg.sender, IERC20(childToken).balanceOf(address(this)));
     }
 
     /// @inheritdoc ISpiritFactory
@@ -193,10 +227,14 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         address agent,
         uint256 specialAllocation,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
-    ) internal returns (ISuperToken child, IStakingPool stakingPool) {
+    )
+        internal
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
+    {
         // deploy the new child token with default 1B supply to the caller (admin)
-        child = ISuperToken(_deployToken(name, symbol, CHILD_TOTAL_SUPPLY));
+        child = ISuperToken(_deployToken(name, symbol, salt, CHILD_TOTAL_SUPPLY));
 
         // Deploy a new StakingPool contract associated to the child token
         stakingPool = IStakingPool(_deployStakingPool(address(child), artist, agent));
@@ -208,7 +246,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         _setupUniswapPool(address(child), DEFAULT_LIQUIDITY_SUPPLY - specialAllocation, initialSqrtPriceX96);
 
         // Deploy the Airstreams
-        _deployAirstream(name, address(child), merkleRoot);
+        (airstreamAddress, controllerAddress) = _deployAirstream(name, address(child), merkleRoot);
 
         // Transfer the remaining balance (if any) to the caller (admin)
         uint256 remainingBalance = child.balanceOf(address(this));
@@ -220,7 +258,10 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         emit ChildTokenCreated(address(child), address(stakingPool), artist, agent, merkleRoot);
     }
 
-    function _deployAirstream(string memory name, address childToken, bytes32 merkleRoot) internal {
+    function _deployAirstream(string memory name, address childToken, bytes32 merkleRoot)
+        internal
+        returns (address airstreamAddress, address controllerAddress)
+    {
         AirstreamConfig memory config = AirstreamConfig({
             name: name,
             token: childToken,
@@ -242,15 +283,19 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
 
         ISuperToken(childToken).approve(address(AIRSTREAM_FACTORY), AIRSTREAM_SUPPLY);
 
-        AIRSTREAM_FACTORY.createExtendedAirstream(config, extendedConfig);
+        (airstreamAddress, controllerAddress) = AIRSTREAM_FACTORY.createExtendedAirstream(config, extendedConfig);
+
+        _airstreamControllers[childToken] = IAirstreamController(controllerAddress);
     }
 
-    function _deployToken(string memory name, string memory symbol, uint256 supply)
+    function _deployToken(string memory name, string memory symbol, bytes32 salt, uint256 supply)
         internal
         returns (address childToken)
     {
-        // This salt will prevent token with the same name and symbol from being deployed twice
-        bytes32 salt = keccak256(abi.encode(name, symbol));
+        bytes32 tokenHash = keccak256(abi.encode(name, symbol));
+
+        if (_deployedChildTokens[tokenHash]) revert CHILD_TOKEN_ALREADY_DEPLOYED();
+        _deployedChildTokens[tokenHash] = true;
 
         // Deploy the new ChildSuperToken contract
         childToken = address(new ChildSuperToken{ salt: salt }());
@@ -296,8 +341,12 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         });
 
         // Initialize the pool
-        POSITION_MANAGER.initializePool(poolKey, initialSqrtPriceX96);
+        int24 currentTick = POSITION_MANAGER.initializePool(poolKey, initialSqrtPriceX96);
 
+        // Ensure the pool was initialized successfully
+        if (currentTick == type(int24).max) revert POOL_INITIALIZATION_FAILED();
+
+        // Mint the liquidity position
         tokenId = _mintSingleSidedLiquidityPosition(childToken, childTokenAmount, poolKey);
     }
 

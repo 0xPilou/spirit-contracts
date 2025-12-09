@@ -10,7 +10,10 @@ import {
 
 contract AirstreamFactoryMock {
 
-    function createExtendedAirstream(AirstreamConfig memory config, AirstreamExtendedConfig memory) public {
+    function createExtendedAirstream(AirstreamConfig memory config, AirstreamExtendedConfig memory)
+        public
+        returns (address airstreamAddress, address controllerAddress)
+    {
         IERC20(config.token).transferFrom(msg.sender, address(this), config.totalAmount);
     }
 

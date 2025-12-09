@@ -29,7 +29,9 @@ interface ISpiritVestingFactory {
     error FORBIDDEN();
 
     /// @notice Error thrown when a recipient already has a vesting contract at the given vesting index
-    error VESTING_DUPLICATED();
+    error RECIPIENT_ALREADY_HAS_VESTING_CONTRACT();
+
+
 
     //      ______     __                        __   ______                 __  _
     //     / ____/  __/ /____  _________  ____ _/ /  / ____/_  ______  _____/ /_(_)___  ____  _____

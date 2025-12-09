@@ -89,16 +89,15 @@ library SpiritDeployer {
         internal
         returns (SpiritDeploymentResult memory results)
     {
-        results.spirit = address(new SpiritToken());
-
-        // Initialize the new SpiritToken contract
-        ISpiritToken(results.spirit).initialize(
-            ISuperTokenFactory(config.superTokenFactory),
+        SpiritTokenFactory factory = new SpiritTokenFactory(
+            config.superTokenFactory,
             config.spiritTokenName,
             config.spiritTokenSymbol,
             deployer,
             config.spiritTokenSupply
         );
+
+        results.spirit = address(factory.proxy());
     }
 
     function _deployVestingFactory(
@@ -251,6 +250,23 @@ library SpiritDeployer {
         IPermit2(config.permit2).approve(
             spiritToken, address(config.positionManager), uint160(amount), uint48(block.timestamp + 60)
         );
+    }
+
+}
+
+contract SpiritTokenFactory {
+
+    SpiritToken public proxy;
+
+    constructor(
+        address superTokenFactoryAddr,
+        string memory name,
+        string memory symbol,
+        address owner,
+        uint256 initialSupply
+    ) {
+        proxy = new SpiritToken();
+        proxy.initialize(ISuperTokenFactory(superTokenFactoryAddr), name, symbol, owner, initialSupply);
     }
 
 }

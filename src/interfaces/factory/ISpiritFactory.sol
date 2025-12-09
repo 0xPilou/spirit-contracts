@@ -33,6 +33,12 @@ interface ISpiritFactory {
     /// @notice Thrown when the special allocation is greater than the default liquidity supply
     error INVALID_SPECIAL_ALLOCATION();
 
+    /// @notice Thrown when the Uniswap V4 pool initialization fails or has been initialized before
+    error POOL_INITIALIZATION_FAILED();
+
+    /// @notice Thrown when a child token with the same name and symbol has already been deployed
+    error CHILD_TOKEN_ALREADY_DEPLOYED();
+
     //      ______     __                        __   ______                 __  _
     //     / ____/  __/ /____  _________  ____ _/ /  / ____/_  ______  _____/ /_(_)___  ____  _____
     //    / __/ | |/_/ __/ _ \/ ___/ __ \/ __ `/ /  / /_  / / / / __ \/ ___/ __/ / __ \/ __ \/ ___/
@@ -47,9 +53,12 @@ interface ISpiritFactory {
      * @param artist The address of the artist
      * @param agent The address of the agent
      * @param merkleRoot The merkle root containing the airdrop allocations
+     * @param salt The salt used to deploy the child token
      * @param initialSqrtPriceX96 The initial sqrt price X96 for the Uniswap V4 pool SPIRIT/CHILD
      * @return child The address of the child token
      * @return stakingPool The address of the staking pool
+     * @return airstreamAddress The address of the airstream
+     * @return controllerAddress The address of the airstream controller
      */
     function createChild(
         string memory name,
@@ -57,8 +66,11 @@ interface ISpiritFactory {
         address artist,
         address agent,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
-    ) external returns (ISuperToken child, IStakingPool stakingPool);
+    )
+        external
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress);
 
     /**
      * @notice Creates a child token and staking pool
@@ -69,9 +81,12 @@ interface ISpiritFactory {
      * @param agent The address of the agent
      * @param specialAllocation The amount of tokens reserved for the special allocation
      * @param merkleRoot The merkle root containing the airdrop allocations
+     * @param salt The salt used to deploy the child token
      * @param initialSqrtPriceX96 The initial sqrt price X96 for the Uniswap V4 pool SPIRIT/CHILD
      * @return child The address of the child token
      * @return stakingPool The address of the staking pool
+     * @return airstreamAddress The address of the airstream
+     * @return controllerAddress The address of the airstream controller
      */
     function createChild(
         string memory name,
@@ -80,8 +95,18 @@ interface ISpiritFactory {
         address agent,
         uint256 specialAllocation,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
-    ) external returns (ISuperToken child, IStakingPool stakingPool);
+    )
+        external
+        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress);
+
+    /**
+     * @notice Terminates the airstream for a child token and returns the remaining tokens to the callers
+     * @dev This function is only callable by the DEFAULT_ADMIN_ROLE
+     * @param childToken The address of the child token
+     */
+    function terminateAirstream(address childToken) external;
 
     /**
      * @notice Upgrades the SpiritFactory contract to a new implementation

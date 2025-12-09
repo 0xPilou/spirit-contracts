@@ -28,15 +28,22 @@ interface IAirstreamFactory {
     /**
      * @notice Create a new airstream
      * @param config The configuration of the airstream
+     * @return airstreamAddress The address of the newly deployed airstream
+     * @return controllerAddress The address of the newly deployed controller
      */
-    function createAirstream(AirstreamConfig memory config) external;
+    function createAirstream(AirstreamConfig memory config)
+        external
+        returns (address airstreamAddress, address controllerAddress);
 
     /**
      * @notice Create a new airstream with extended configuration
      * @param config The configuration of the airstream
      * @param extendedConfig The extended configuration of the airstream
+     * @return airstreamAddress The address of the newly deployed airstream
+     * @return controllerAddress The address of the newly deployed controller
      */
     function createExtendedAirstream(AirstreamConfig memory config, AirstreamExtendedConfig memory extendedConfig)
-        external;
+        external
+        returns (address airstreamAddress, address controllerAddress);
 
 }
