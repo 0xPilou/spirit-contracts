@@ -105,6 +105,9 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
     /// @notice Mapping of child token addresses to their corresponding airstream controller interface
     mapping(address childToken => IAirstreamController controllerAddress) private _airstreamControllers;
 
+    /// @notice Mapping of child token hashes to their deployment status
+    mapping(bytes32 tokenHash => bool deployed) private _deployedChildTokens;
+
     //     ______                 __                  __
     //    / ____/___  ____  _____/ /________  _______/ /_____  _____
     //   / /   / __ \/ __ \/ ___/ __/ ___/ / / / ___/ __/ __ \/ ___/
@@ -165,6 +168,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         address artist,
         address agent,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
     )
         external
@@ -172,7 +176,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
     {
         (child, stakingPool, airstreamAddress, controllerAddress) =
-            _createChild(name, symbol, artist, agent, 0, merkleRoot, initialSqrtPriceX96);
+            _createChild(name, symbol, artist, agent, 0, merkleRoot, salt, initialSqrtPriceX96);
     }
 
     /// @inheritdoc ISpiritFactory
@@ -183,6 +187,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         address agent,
         uint256 specialAllocation,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
     )
         external
@@ -193,7 +198,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         if (specialAllocation >= DEFAULT_LIQUIDITY_SUPPLY) revert INVALID_SPECIAL_ALLOCATION();
 
         (child, stakingPool, airstreamAddress, controllerAddress) =
-            _createChild(name, symbol, artist, agent, specialAllocation, merkleRoot, initialSqrtPriceX96);
+            _createChild(name, symbol, artist, agent, specialAllocation, merkleRoot, salt, initialSqrtPriceX96);
     }
 
     /// @inheritdoc ISpiritFactory
@@ -222,13 +227,14 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         address agent,
         uint256 specialAllocation,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
     )
         internal
         returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
     {
         // deploy the new child token with default 1B supply to the caller (admin)
-        child = ISuperToken(_deployToken(name, symbol, CHILD_TOTAL_SUPPLY));
+        child = ISuperToken(_deployToken(name, symbol, salt, CHILD_TOTAL_SUPPLY));
 
         // Deploy a new StakingPool contract associated to the child token
         stakingPool = IStakingPool(_deployStakingPool(address(child), artist, agent));
@@ -282,12 +288,14 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         _airstreamControllers[childToken] = IAirstreamController(controllerAddress);
     }
 
-    function _deployToken(string memory name, string memory symbol, uint256 supply)
+    function _deployToken(string memory name, string memory symbol, bytes32 salt, uint256 supply)
         internal
         returns (address childToken)
     {
-        // This salt will prevent token with the same name and symbol from being deployed twice
-        bytes32 salt = keccak256(abi.encode(name, symbol));
+        bytes32 tokenHash = keccak256(abi.encode(name, symbol));
+
+        if (_deployedChildTokens[tokenHash]) revert CHILD_TOKEN_ALREADY_DEPLOYED();
+        _deployedChildTokens[tokenHash] = true;
 
         // Deploy the new ChildSuperToken contract
         childToken = address(new ChildSuperToken{ salt: salt }());

@@ -36,6 +36,9 @@ interface ISpiritFactory {
     /// @notice Thrown when the Uniswap V4 pool initialization fails or has been initialized before
     error POOL_INITIALIZATION_FAILED();
 
+    /// @notice Thrown when a child token with the same name and symbol has already been deployed
+    error CHILD_TOKEN_ALREADY_DEPLOYED();
+
     //      ______     __                        __   ______                 __  _
     //     / ____/  __/ /____  _________  ____ _/ /  / ____/_  ______  _____/ /_(_)___  ____  _____
     //    / __/ | |/_/ __/ _ \/ ___/ __ \/ __ `/ /  / /_  / / / / __ \/ ___/ __/ / __ \/ __ \/ ___/
@@ -50,6 +53,7 @@ interface ISpiritFactory {
      * @param artist The address of the artist
      * @param agent The address of the agent
      * @param merkleRoot The merkle root containing the airdrop allocations
+     * @param salt The salt used to deploy the child token
      * @param initialSqrtPriceX96 The initial sqrt price X96 for the Uniswap V4 pool SPIRIT/CHILD
      * @return child The address of the child token
      * @return stakingPool The address of the staking pool
@@ -62,6 +66,7 @@ interface ISpiritFactory {
         address artist,
         address agent,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
     )
         external
@@ -76,6 +81,7 @@ interface ISpiritFactory {
      * @param agent The address of the agent
      * @param specialAllocation The amount of tokens reserved for the special allocation
      * @param merkleRoot The merkle root containing the airdrop allocations
+     * @param salt The salt used to deploy the child token
      * @param initialSqrtPriceX96 The initial sqrt price X96 for the Uniswap V4 pool SPIRIT/CHILD
      * @return child The address of the child token
      * @return stakingPool The address of the staking pool
@@ -89,6 +95,7 @@ interface ISpiritFactory {
         address agent,
         uint256 specialAllocation,
         bytes32 merkleRoot,
+        bytes32 salt,
         uint160 initialSqrtPriceX96
     )
         external
