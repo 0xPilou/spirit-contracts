@@ -81,11 +81,17 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
     /// @notice Total supply of each child token (1 billion)
     uint256 public constant CHILD_TOTAL_SUPPLY = 1_000_000_000 ether;
 
-    /// @notice Default amount of tokens supplied to the liquidity pool (250 million)
-    uint256 public constant DEFAULT_LIQUIDITY_SUPPLY = 250_000_000 ether;
+    /// @notice Default amount of tokens supplied to the liquidity pool (50 million)
+    uint256 public constant LIQUIDITY_SUPPLY = 50_000_000 ether;
+
+    /// @notice Amount of tokens reserved for the Airstream (250 million)
+    uint96 public constant PLATFORM_ALLOCATION = 250_000_000 ether;
 
     /// @notice Amount of tokens reserved for the Airstream (250 million)
     uint96 public constant AIRSTREAM_SUPPLY = 250_000_000 ether;
+
+    /// @notice Amount of tokens reserved for the Artist and Agent (450 million)
+    uint256 public constant _ARTIST_AND_AGENT_ALLOCATION = 450_000_000 ether;
 
     /// @notice Duration of the Airstream distribution (52 weeks = 1 year)
     uint64 public constant AIRSTREAM_DURATION = 52 weeks;
@@ -167,6 +173,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         string memory symbol,
         address artist,
         address agent,
+        address platform,
         bytes32 merkleRoot,
         bytes32 salt,
         uint160 initialSqrtPriceX96
@@ -176,29 +183,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
     {
         (child, stakingPool, airstreamAddress, controllerAddress) =
-            _createChild(name, symbol, artist, agent, 0, merkleRoot, salt, initialSqrtPriceX96);
-    }
-
-    /// @inheritdoc ISpiritFactory
-    function createChild(
-        string memory name,
-        string memory symbol,
-        address artist,
-        address agent,
-        uint256 specialAllocation,
-        bytes32 merkleRoot,
-        bytes32 salt,
-        uint160 initialSqrtPriceX96
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress)
-    {
-        // Ensure the special allocation is not greater than the default liquidity supply
-        if (specialAllocation >= DEFAULT_LIQUIDITY_SUPPLY) revert INVALID_SPECIAL_ALLOCATION();
-
-        (child, stakingPool, airstreamAddress, controllerAddress) =
-            _createChild(name, symbol, artist, agent, specialAllocation, merkleRoot, salt, initialSqrtPriceX96);
+            _createChild(name, symbol, artist, agent, platform, merkleRoot, salt, initialSqrtPriceX96);
     }
 
     /// @inheritdoc ISpiritFactory
@@ -225,7 +210,7 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         string memory symbol,
         address artist,
         address agent,
-        uint256 specialAllocation,
+        address platform,
         bytes32 merkleRoot,
         bytes32 salt,
         uint160 initialSqrtPriceX96
@@ -242,18 +227,14 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         // Update the reward controller configuration
         REWARD_CONTROLLER.setStakingPool(address(child), stakingPool);
 
-        // Create the Uniswap V4 pool and mint liquidity position for 250M CHILD (single sided)
-        _setupUniswapPool(address(child), DEFAULT_LIQUIDITY_SUPPLY - specialAllocation, initialSqrtPriceX96);
+        // Create the Uniswap V4 pool and mint single-sided position for 50M CHILD - position is owned by agent
+        _setupUniswapPool(address(child), agent, initialSqrtPriceX96);
 
         // Deploy the Airstreams
         (airstreamAddress, controllerAddress) = _deployAirstream(name, address(child), merkleRoot);
 
-        // Transfer the remaining balance (if any) to the caller (admin)
-        uint256 remainingBalance = child.balanceOf(address(this));
-
-        if (remainingBalance > 0) {
-            child.transfer(msg.sender, remainingBalance);
-        }
+        // Transfer the platform allocation to the platform address
+        child.transfer(platform, PLATFORM_ALLOCATION);
 
         emit ChildTokenCreated(address(child), address(stakingPool), artist, agent, merkleRoot);
     }
@@ -315,13 +296,13 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         stakingPool = address(new BeaconProxy{ salt: salt }(address(STAKING_POOL_BEACON), ""));
 
         // Approve the staking pool to spend the 500M CHILD (artist and agent share) from this contract
-        ISuperToken(childToken).approve(address(stakingPool), 500_000_000 ether);
+        ISuperToken(childToken).approve(address(stakingPool), _ARTIST_AND_AGENT_ALLOCATION);
 
         // Initialize the new Locker instance
         IStakingPool(stakingPool).initialize(ISuperToken(childToken), artist, agent);
     }
 
-    function _setupUniswapPool(address childToken, uint256 childTokenAmount, uint160 initialSqrtPriceX96)
+    function _setupUniswapPool(address childToken, address positionRecipient, uint160 initialSqrtPriceX96)
         internal
         returns (uint256 tokenId)
     {
@@ -347,10 +328,10 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         if (currentTick == type(int24).max) revert POOL_INITIALIZATION_FAILED();
 
         // Mint the liquidity position
-        tokenId = _mintSingleSidedLiquidityPosition(childToken, childTokenAmount, poolKey);
+        tokenId = _mintSingleSidedLiquidityPosition(childToken, positionRecipient, poolKey);
     }
 
-    function _mintSingleSidedLiquidityPosition(address childToken, uint256 childTokenAmount, PoolKey memory poolKey)
+    function _mintSingleSidedLiquidityPosition(address childToken, address positionRecipient, PoolKey memory poolKey)
         internal
         returns (uint256 tokenId)
     {
@@ -358,17 +339,17 @@ contract SpiritFactory is ISpiritFactory, Initializable, AccessControl {
         tokenId = POSITION_MANAGER.nextTokenId();
 
         (uint256 amount0, uint256 amount1, uint128 liquidity, int24 tickLower, int24 tickUpper) =
-            _orderParams(childToken, childTokenAmount, poolKey);
+            _orderParams(childToken, LIQUIDITY_SUPPLY, poolKey);
 
         bytes memory actions = new bytes(2);
         actions[0] = bytes1(uint8(Actions.MINT_POSITION));
         actions[1] = bytes1(uint8(Actions.SETTLE_PAIR));
 
         bytes[] memory params = new bytes[](2);
-        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0, amount1, msg.sender, bytes(""));
+        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0, amount1, positionRecipient, bytes(""));
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
 
-        _approvePermit2(childToken, childTokenAmount);
+        _approvePermit2(childToken, LIQUIDITY_SUPPLY);
 
         // Execute the minting transaction
         POSITION_MANAGER.modifyLiquidities(abi.encode(actions, params), block.timestamp + 60);

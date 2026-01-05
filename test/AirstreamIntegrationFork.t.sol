@@ -80,7 +80,7 @@ contract AirstreamIntegrationForkTest is SpiritTestBase {
         _helper_populateTestData();
     }
 
-    function _createChild(uint256 specialAllocation)
+    function _createChild()
         internal
         returns (
             ISuperToken newChildToken,
@@ -92,22 +92,9 @@ contract AirstreamIntegrationForkTest is SpiritTestBase {
         bytes32 salt = keccak256(abi.encode("SALT_FOR_NEW_CHILD_TOKEN"));
 
         vm.prank(ADMIN);
-        if (specialAllocation == 0) {
-            (newChildToken, newStakingPool, airstreamAddress, controllerAddress) = _spiritFactory.createChild(
-                "New Child Token", "NEWCHILD", ARTIST, AGENT, MERKLE_ROOT, salt, DEFAULT_SQRT_PRICE_X96
-            );
-        } else {
-            (newChildToken, newStakingPool, airstreamAddress, controllerAddress) = _spiritFactory.createChild(
-                "New Child Token",
-                "NEWCHILD",
-                ARTIST,
-                AGENT,
-                specialAllocation,
-                MERKLE_ROOT,
-                salt,
-                DEFAULT_SQRT_PRICE_X96
-            );
-        }
+        (newChildToken, newStakingPool, airstreamAddress, controllerAddress) = _spiritFactory.createChild(
+            "New Child Token", "NEWCHILD", ARTIST, AGENT, TREASURY, MERKLE_ROOT, salt, DEFAULT_SQRT_PRICE_X96
+        );
 
         // State settings assertions
         assertNotEq(address(newChildToken), address(0), "Invalid child token address");
@@ -126,15 +113,20 @@ contract AirstreamIntegrationForkTest is SpiritTestBase {
         assertEq(newChildToken.balanceOf(ARTIST), 0, "Artist should not have floating CHILD tokens");
         assertEq(newChildToken.balanceOf(AGENT), 0, "Agent should not have floating CHILD tokens");
         assertEq(
+            newChildToken.balanceOf(TREASURY),
+            _spiritFactory.PLATFORM_ALLOCATION(),
+            "Platform (TREASURY) should have 250M CHILD tokens (PLATFORM allocation)"
+        );
+        assertEq(
             newChildToken.balanceOf(address(newStakingPool)),
-            500_000_000 ether,
-            "Staking Pool should have 500M CHILD tokens (ARTIST and AGENT shares)"
+            _spiritFactory._ARTIST_AND_AGENT_ALLOCATION(),
+            "Staking Pool should have 450M CHILD tokens (ARTIST and AGENT shares)"
         );
 
         assertEq(
             newChildToken.balanceOf(address(_config.poolManager)),
-            _spiritFactory.DEFAULT_LIQUIDITY_SUPPLY() - specialAllocation,
-            "UniswapV4 Pool Manager should have 250M CHILD tokens (Liquidity)"
+            _spiritFactory.LIQUIDITY_SUPPLY(),
+            "UniswapV4 Pool Manager should have 50M CHILD tokens (Liquidity)"
         );
 
         assertApproxEqAbs(
@@ -145,15 +137,9 @@ contract AirstreamIntegrationForkTest is SpiritTestBase {
         );
 
         assertEq(
-            newChildToken.balanceOf(address(ADMIN)),
-            specialAllocation,
-            "Admin should have `specialAllocation` CHILD tokens (ADMIN share)"
-        );
-
-        assertEq(
-            IERC721(address(_config.positionManager)).balanceOf(address(ADMIN)),
+            IERC721(address(_config.positionManager)).balanceOf(address(AGENT)),
             1,
-            "ADMIN should own 1 UniswapV4 Position NFT"
+            "AGENT should own 1 UniswapV4 Position NFT"
         );
 
         // GDA Settings Assertions
@@ -168,24 +154,18 @@ contract AirstreamIntegrationForkTest is SpiritTestBase {
         );
         assertEq(
             newStakingPool.distributionPool().getUnits(address(AGENT)),
-            newStakingPool.calculateMultiplier(newStakingPool.STAKEHOLDER_LOCKING_PERIOD()) * 250_000_000
+            newStakingPool.calculateMultiplier(newStakingPool.STAKEHOLDER_LOCKING_PERIOD()) * 200_000_000
                 / newStakingPool.MIN_MULTIPLIER(),
-            "AGENT should have 250M CHILD tokens locked for 12 months worth of units"
+            "AGENT should have 200M CHILD tokens locked for 12 months worth of units"
         );
     }
 
     function test_createChild() public {
-        _createChild(0);
-    }
-
-    function test_createChild_with_special_allocation(uint256 specialAllocation) public {
-        specialAllocation = bound(specialAllocation, 1, _spiritFactory.DEFAULT_LIQUIDITY_SUPPLY() - 1);
-
-        _createChild(specialAllocation);
+        _createChild();
     }
 
     function test_claimAirstream() public {
-        (ISuperToken newChildToken,, address airstreamAddress,) = _createChild(0);
+        (ISuperToken newChildToken,, address airstreamAddress,) = _createChild();
 
         int96 expectedFlowRate1 = int256(_merkleDetails[user1].amount / _spiritFactory.AIRSTREAM_DURATION()).toInt96();
 
@@ -233,7 +213,7 @@ contract AirstreamIntegrationForkTest is SpiritTestBase {
     }
 
     function test_terminateAirstream() public {
-        (ISuperToken newChildToken,, address airstreamAddress,) = _createChild(0);
+        (ISuperToken newChildToken,, address airstreamAddress,) = _createChild();
 
         IAirstream(airstreamAddress).claim(user1, _merkleDetails[user1].amount, _merkleDetails[user1].proof);
         IAirstream(airstreamAddress).claim(user2, _merkleDetails[user2].amount, _merkleDetails[user2].proof);

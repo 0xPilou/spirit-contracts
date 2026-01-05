@@ -210,7 +210,7 @@ contract RewardControllerTest is SpiritTestBase {
 
         vm.prank(ADMIN);
         (childToken, stakingPool,,) = _spiritFactory.createChild(
-            "New Child Token", "NEWCHILD", ARTIST, AGENT, bytes32(0), salt, DEFAULT_SQRT_PRICE_X96
+            "New Child Token", "NEWCHILD", ARTIST, AGENT, TREASURY, bytes32(0), salt, DEFAULT_SQRT_PRICE_X96
         );
 
         assertEq(address(_rewardController.stakingPools(address(childToken))), address(stakingPool));

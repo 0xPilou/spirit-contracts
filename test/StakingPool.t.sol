@@ -29,7 +29,7 @@ contract StakingPoolTest is SpiritTestBase {
         // Deploy and initialize the StakingPool
         vm.prank(ADMIN);
         (_childToken, _stakingPool,,) = _spiritFactory.createChild(
-            "Child Token", "CHILD", ARTIST, AGENT, _AVAILABLE_SUPPLY, bytes32(0), salt, DEFAULT_SQRT_PRICE_X96
+            "Child Token", "CHILD", ARTIST, AGENT, TREASURY, bytes32(0), salt, DEFAULT_SQRT_PRICE_X96
         );
     }
 
@@ -500,7 +500,7 @@ contract StakingPoolTest is SpiritTestBase {
 
     // Helper functions
     function _stake(address staker, uint256 amountToStake, uint256 lockingPeriod) internal {
-        dealSuperToken(ADMIN, staker, _childToken, amountToStake);
+        dealSuperToken(TREASURY, staker, _childToken, amountToStake);
 
         vm.startPrank(staker);
         _childToken.approve(address(_stakingPool), amountToStake);
@@ -517,7 +517,7 @@ contract StakingPoolTest is SpiritTestBase {
     function _stake_should_revert(address staker, uint256 amountToStake, uint256 lockingPeriod, bytes memory revertWith)
         internal
     {
-        dealSuperToken(ADMIN, staker, _childToken, amountToStake);
+        dealSuperToken(TREASURY, staker, _childToken, amountToStake);
 
         vm.startPrank(staker);
         _childToken.approve(address(_stakingPool), amountToStake);
@@ -528,7 +528,7 @@ contract StakingPoolTest is SpiritTestBase {
     }
 
     function _increaseStake(address staker, uint256 amountToStake, bool withBonus) internal {
-        dealSuperToken(ADMIN, staker, _childToken, amountToStake);
+        dealSuperToken(TREASURY, staker, _childToken, amountToStake);
 
         uint256 initialStakedAmount = _stakingPool.getStakingInfo(staker).stakedAmount;
         uint256 initialLockedUntil = _stakingPool.getStakingInfo(staker).lockedUntil;
@@ -564,7 +564,7 @@ contract StakingPoolTest is SpiritTestBase {
     }
 
     function _increaseStake_should_revert(address staker, uint256 amountToStake, bytes memory revertWith) internal {
-        dealSuperToken(ADMIN, staker, _childToken, amountToStake);
+        dealSuperToken(TREASURY, staker, _childToken, amountToStake);
 
         vm.startPrank(staker);
         _childToken.approve(address(_stakingPool), amountToStake);

@@ -66,8 +66,11 @@ contract StakingPool is IStakingPool, Initializable {
     /// @notice Stakeholder locking period (1 year)
     uint256 public constant STAKEHOLDER_LOCKING_PERIOD = 52 weeks;
 
-    /// @notice Stakeholder amount (250M SPIRIT)
-    uint256 private constant _STAKEHOLDER_AMOUNT = 250_000_000 ether;
+    /// @notice Artist Staked Allocation (250M SPIRIT)
+    uint256 public constant ARTIST_ALLOCATION = 250_000_000 ether;
+
+    /// @notice Agent Staked Allocation (200M SPIRIT)
+    uint256 public constant AGENT_ALLOCATION = 200_000_000 ether;
 
     /// @notice Downscaler (used for GDA pool units calculation)
     uint256 private constant _DOWNSCALER = 1e18;
@@ -121,8 +124,8 @@ contract StakingPool is IStakingPool, Initializable {
         distributionPool.updateMemberUnits(address(this), 1);
 
         // Stake the artist and agent tokens for the initial staking
-        _stake(artist, _STAKEHOLDER_AMOUNT, STAKEHOLDER_LOCKING_PERIOD);
-        _stake(agent, _STAKEHOLDER_AMOUNT, STAKEHOLDER_LOCKING_PERIOD);
+        _stake(artist, ARTIST_ALLOCATION, STAKEHOLDER_LOCKING_PERIOD);
+        _stake(agent, AGENT_ALLOCATION, STAKEHOLDER_LOCKING_PERIOD);
     }
 
     //      ______     __                        __   ______                 __  _

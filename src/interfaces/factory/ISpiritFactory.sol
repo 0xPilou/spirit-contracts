@@ -52,6 +52,7 @@ interface ISpiritFactory {
      * @param symbol The symbol of the child token
      * @param artist The address of the artist
      * @param agent The address of the agent
+     * @param platform The address of the platform
      * @param merkleRoot The merkle root containing the airdrop allocations
      * @param salt The salt used to deploy the child token
      * @param initialSqrtPriceX96 The initial sqrt price X96 for the Uniswap V4 pool SPIRIT/CHILD
@@ -65,35 +66,7 @@ interface ISpiritFactory {
         string memory symbol,
         address artist,
         address agent,
-        bytes32 merkleRoot,
-        bytes32 salt,
-        uint160 initialSqrtPriceX96
-    )
-        external
-        returns (ISuperToken child, IStakingPool stakingPool, address airstreamAddress, address controllerAddress);
-
-    /**
-     * @notice Creates a child token and staking pool
-     * @dev This function is only callable by the DEFAULT_ADMIN_ROLE
-     * @param name The name of the child token
-     * @param symbol The symbol of the child token
-     * @param artist The address of the artist
-     * @param agent The address of the agent
-     * @param specialAllocation The amount of tokens reserved for the special allocation
-     * @param merkleRoot The merkle root containing the airdrop allocations
-     * @param salt The salt used to deploy the child token
-     * @param initialSqrtPriceX96 The initial sqrt price X96 for the Uniswap V4 pool SPIRIT/CHILD
-     * @return child The address of the child token
-     * @return stakingPool The address of the staking pool
-     * @return airstreamAddress The address of the airstream
-     * @return controllerAddress The address of the airstream controller
-     */
-    function createChild(
-        string memory name,
-        string memory symbol,
-        address artist,
-        address agent,
-        uint256 specialAllocation,
+        address platform,
         bytes32 merkleRoot,
         bytes32 salt,
         uint160 initialSqrtPriceX96

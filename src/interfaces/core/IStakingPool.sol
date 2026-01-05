@@ -224,4 +224,16 @@ interface IStakingPool {
      */
     function STAKEHOLDER_LOCKING_PERIOD() external view returns (uint256);
 
+    /**
+     * @notice Gets artist allocation
+     * @return ARTIST_ALLOCATION Artist allocation
+     */
+    function ARTIST_ALLOCATION() external view returns (uint256);
+
+    /**
+     * @notice Gets agent allocation
+     * @return AGENT_ALLOCATION Agent allocation
+     */
+    function AGENT_ALLOCATION() external view returns (uint256);
+
 }
